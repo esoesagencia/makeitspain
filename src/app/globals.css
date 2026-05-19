@@ -1,26 +1,154 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* ── Design tokens — MakeItSpain brand (light / coral) ───────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Core palette */
+  --color-background:      #F5EDED;
+  --color-surface:         #FFFFFF;
+  --color-surface-tint:    #FAF4F2;
+  --color-surface-hover:   #F7EFED;
+  --color-border:          rgba(180, 100, 90, 0.12);
+  --color-border-strong:   rgba(180, 100, 90, 0.22);
+
+  /* Coral red — primary brand */
+  --color-coral:           #D94040;
+  --color-coral-light:     #F06050;
+  --color-coral-dim:       #B83228;
+  --color-coral-bg:        rgba(217, 64, 64, 0.08);
+
+  /* Text */
+  --color-text-primary:    #1E0E0B;
+  --color-text-secondary:  #6B4845;
+  --color-text-muted:      #9A7A78;
+  --color-text-subtle:     #C4AAA8;
+
+  /* Activity categories */
+  --color-cat-activity:    #D94040;
+  --color-cat-transfer:    #3B6FCA;
+  --color-cat-meal:        #C07C10;
+  --color-cat-free:        #1A9E72;
+  --color-cat-surprise:    #8B4DC0;
+  --color-cat-hotel:       #C05A28;
+  --color-cat-sleep:       #2C4E8A;
+
+  /* Status */
+  --color-success:         #1A9E72;
+  --color-danger:          #D94040;
+
+  /* Typography */
+  --font-display: var(--font-playfair);
+  --font-sans:    var(--font-inter);
+
+  /* Radii */
+  --radius-card:   16px;
+  --radius-button: 10px;
+
+  --spacing-base: 16px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Base ───────────────────────────────────────────────────────────────────── */
+:root {
+  background-color: #F5EDED;
+  color: #1E0E0B;
+}
+
+html { scroll-behavior: smooth; }
+
+/* Remove bottom nav offset on desktop */
+@media (min-width: 1024px) {
+  :root { --bottom-nav-offset: 0px; }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #F5EDED;
+  color: #1E0E0B;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display), Georgia, serif;
+  color: #1E0E0B;
+  letter-spacing: -0.01em;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(217,64,64,0.2); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(217,64,64,0.4); }
+
+/* ── Selection ──────────────────────────────────────────────────────────────── */
+::selection { background: rgba(217,64,64,0.15); color: #1E0E0B; }
+
+/* ── Utility: hide scrollbar ────────────────────────────────────────────────── */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Coral shimmer animation ─────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+.coral-shimmer {
+  background: linear-gradient(90deg, #D94040, #F06050, #D94040, #B83228);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 4s linear infinite;
+}
+
+/* ── Fade animations ────────────────────────────────────────────────────────── */
+@keyframes fadeIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeUp  { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+.animate-fade-in { animation: fadeIn  0.5s ease forwards; }
+.animate-fade-up { animation: fadeUp  0.6s ease forwards; }
+
+/* ── Wave hand ──────────────────────────────────────────────────────────────── */
+@keyframes waveHand {
+  0%   { transform: rotate(0deg);  }
+  10%  { transform: rotate(20deg); }
+  20%  { transform: rotate(-10deg);}
+  30%  { transform: rotate(20deg); }
+  40%  { transform: rotate(-6deg); }
+  50%  { transform: rotate(14deg); }
+  65%  { transform: rotate(-2deg); }
+  80%  { transform: rotate(6deg);  }
+  100% { transform: rotate(0deg);  }
+}
+.wave-hand {
+  display: inline-block;
+  transform-origin: 70% 70%;
+  animation: waveHand 1.6s ease-in-out forwards;
+}
+
+/* ── Red line fill ──────────────────────────────────────────────────────────── */
+@keyframes redLineFill {
+  from { width: 0%;   }
+  to   { width: 100%; }
+}
+
+/* ── Confetti particle ──────────────────────────────────────────────────────── */
+@keyframes confettiFly {
+  0%   { transform: translate(0,0) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--cx), var(--cy)) scale(0.3) rotate(var(--cr)); opacity: 0; }
+}
+
+/* ── Sidebar nav icon entrance ──────────────────────────────────────────────── */
+@keyframes iconPop {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.25); opacity: 1; }
+  80%  { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+/* ── Card shadow ────────────────────────────────────────────────────────────── */
+.card-shadow {
+  box-shadow: 0 1px 4px rgba(120,60,50,0.07), 0 4px 16px rgba(120,60,50,0.06);
+}
+.card-shadow-hover {
+  box-shadow: 0 4px 20px rgba(120,60,50,0.12), 0 1px 4px rgba(120,60,50,0.06);
 }

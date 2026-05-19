@@ -1,0 +1,36 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tripId", "order": "ASCENDING" },
+        { "fieldPath": "scheduledFor", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "activities",
+      "fieldPath": "reminderFireAt",
+      "indexes": [
+        { "order": "ASCENDING",  "queryScope": "COLLECTION_GROUP" },
+        { "order": "DESCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "fieldPath": "reminderEnabled",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "fieldPath": "reminderSent",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    }
+  ]
+}

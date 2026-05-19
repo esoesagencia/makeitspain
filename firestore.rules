@@ -1,0 +1,82 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    function isTripMember(tripId) {
+      return isSignedIn() &&
+        request.auth.uid in get(/databases/$(database)/documents/trips/$(tripId)).data.memberIds;
+    }
+
+    // ── Users ─────────────────────────────────────────────────────────────────
+
+    match /users/{uid} {
+      // Users can read and write their own document; admins can read all
+      allow read: if request.auth.uid == uid || isAdmin();
+      allow write: if request.auth.uid == uid || isAdmin();
+    }
+
+    // ── Trips ─────────────────────────────────────────────────────────────────
+
+    match /trips/{tripId} {
+      // list (collection query) allowed without auth for invite code lookup.
+      // get (single document) restricted to members and admins.
+      allow list: if true;
+      allow get:  if isTripMember(tripId) || isAdmin();
+
+      // Admins can do anything; authenticated users can add themselves to memberIds.
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() ||
+        (isSignedIn() &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds']) &&
+         request.resource.data.memberIds.hasAll(resource.data.memberIds) &&
+         request.resource.data.memberIds.hasAll([request.auth.uid]));
+
+      // Activities subcollection
+      match /activities/{activityId} {
+        allow read: if isTripMember(tripId) || isAdmin();
+        allow write: if isAdmin();
+      }
+
+      // Accommodations subcollection
+      match /accommodations/{accommodationId} {
+        allow read: if isTripMember(tripId) || isAdmin();
+        allow write: if isAdmin();
+      }
+    }
+
+    // ── Internal metadata (counters, etc.) ───────────────────────────────────
+    // Only admins can read/write _meta documents (e.g. tripCounter).
+
+    match /_meta/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ── Authors ───────────────────────────────────────────────────────────────
+
+    match /authors/{authorId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ── Notifications ─────────────────────────────────────────────────────────
+
+    match /notifications/{notificationId} {
+      // Only the targeted users or admins can read a notification
+      allow read: if isAdmin() ||
+        (isSignedIn() && request.auth.uid in resource.data.targetUserIds);
+      allow write: if isAdmin();
+    }
+  }
+}
