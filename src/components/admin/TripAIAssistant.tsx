@@ -190,6 +190,19 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
           if (fields.endTime) updates.endTime = parseMadridDateTime(dateStr, fields.endTime);
           if (fields.date) updates.date = parseMadridDate(dateStr);
         }
+        // Recalculate reminderFireAt when reminder settings change
+        const newEnabled = fields.reminderEnabled ?? (existing?.reminderEnabled ?? false);
+        const newMinutes = fields.reminderMinutesBefore ?? (existing?.reminderMinutesBefore ?? 30);
+        if (fields.reminderEnabled !== undefined || fields.reminderMinutesBefore !== undefined || fields.startTime !== undefined) {
+          if (newEnabled && dateStr) {
+            const startStr = fields.startTime ?? existing?.startTime?.toDate?.()?.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }) ?? "10:00";
+            const startTs = parseMadridDateTime(dateStr, startStr);
+            updates.reminderFireAt = Timestamp.fromMillis(startTs.toMillis() - newMinutes * 60_000);
+            updates.reminderSent = false;
+          } else if (!newEnabled) {
+            updates.reminderFireAt = null;
+          }
+        }
         await updateDoc(ref, updates);
 
       } else if (op.type === "delete" && op.activityId) {
