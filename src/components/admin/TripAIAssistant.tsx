@@ -86,8 +86,8 @@ function buildFirestoreActivity(fields: AIActivityFields, trip: Trip, sortOrder:
     place: fields.place ?? "",
     address: fields.address ?? "",
     recommendations: fields.recommendations ?? null,
-    contactPhone: null,
-    contactLink: null,
+    contactPhone: fields.contactPhone ?? null,
+    contactLink: fields.contactLink ?? null,
     coordinatorNote: fields.coordinatorNote ?? null,
     isVisited: false,
     visitedBy: [],
@@ -95,11 +95,17 @@ function buildFirestoreActivity(fields: AIActivityFields, trip: Trip, sortOrder:
     isSurprise: fields.isSurprise ?? false,
     surpriseVisibleAt: null,
     surpriseDescription: fields.surpriseDescription ?? "",
+    surpriseContactName: fields.surpriseContactName ?? "",
+    surpriseContactPhone: fields.surpriseContactPhone ?? "",
+    surpriseLink: fields.surpriseLink ?? "",
     surpriseOrganizerOnly: fields.surpriseOrganizerOnly ?? true,
     imageUrl: null,
     isBooked: fields.isBooked ?? false,
     transferMode: (fields.transferMode as "taxi" | "walking" | "transit") ?? "taxi",
     transferDuration: fields.transferDuration ?? null,
+    breakfastType: fields.breakfastType ?? null,
+    specialBreakfastInfo: fields.specialBreakfastInfo ?? "",
+    specialBreakfastContact: fields.specialBreakfastContact ?? "",
     reminderEnabled: fields.reminderEnabled ?? false,
     reminderMinutesBefore: fields.reminderMinutesBefore ?? 30,
     reminderMessage: fields.reminderMessage ?? "",
@@ -169,6 +175,14 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
         if (fields.estimatedDuration !== undefined) updates.estimatedDuration = fields.estimatedDuration;
         if (fields.transferMode !== undefined) updates.transferMode = fields.transferMode;
         if (fields.transferDuration !== undefined) updates.transferDuration = fields.transferDuration;
+        if (fields.contactPhone !== undefined) updates.contactPhone = fields.contactPhone;
+        if (fields.contactLink !== undefined) updates.contactLink = fields.contactLink;
+        if (fields.surpriseContactName !== undefined) updates.surpriseContactName = fields.surpriseContactName;
+        if (fields.surpriseContactPhone !== undefined) updates.surpriseContactPhone = fields.surpriseContactPhone;
+        if (fields.surpriseLink !== undefined) updates.surpriseLink = fields.surpriseLink;
+        if (fields.breakfastType !== undefined) updates.breakfastType = fields.breakfastType;
+        if (fields.specialBreakfastInfo !== undefined) updates.specialBreakfastInfo = fields.specialBreakfastInfo;
+        if (fields.specialBreakfastContact !== undefined) updates.specialBreakfastContact = fields.specialBreakfastContact;
         const existing = activities.find(a => a.id === op.activityId);
         const dateStr = fields.date ?? existing?.date?.toDate?.()?.toISOString?.()?.slice(0, 10);
         if (dateStr) {
@@ -222,6 +236,17 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
       } else if (op.type === "update_trip" && op.fields) {
         const tripRef = doc(db, COLLECTIONS.TRIPS, trip.id);
         const updates: Record<string, unknown> = {};
+        // Core trip fields
+        if (op.fields.tripName !== undefined) updates.tripName = op.fields.tripName;
+        if (op.fields.clientName !== undefined) updates.clientName = op.fields.clientName;
+        if (op.fields.destination !== undefined) updates.destination = op.fields.destination;
+        if (op.fields.numberOfPeople !== undefined) updates.numberOfPeople = op.fields.numberOfPeople;
+        if (op.fields.tripType !== undefined) updates.tripType = op.fields.tripType;
+        if (op.fields.budgetFrom !== undefined) updates.budgetFrom = op.fields.budgetFrom;
+        if (op.fields.budgetTo !== undefined) updates.budgetTo = op.fields.budgetTo;
+        if (op.fields.budgetMode !== undefined) updates.budgetMode = op.fields.budgetMode;
+        if (op.fields.specialRequirements !== undefined) updates.specialRequirements = op.fields.specialRequirements;
+        // Info sections
         if (op.fields.personalMessage !== undefined) updates.personalMessage = op.fields.personalMessage;
         if (op.fields.additionalInfoClimate !== undefined) updates.additionalInfoClimate = op.fields.additionalInfoClimate;
         if (op.fields.additionalInfoDressCode !== undefined) updates.additionalInfoDressCode = op.fields.additionalInfoDressCode;
@@ -247,6 +272,17 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
             dayTime: b.dayTime ?? "",
             cost: b.cost ?? "",
             link: b.link ?? "",
+          }));
+        }
+        if (op.fields.specialCare !== undefined) {
+          updates.specialCare = op.fields.specialCare.map(s => ({
+            id: s.id ?? crypto.randomUUID(),
+            name: s.name ?? "",
+            phone: s.phone ?? "",
+            address: s.address ?? "",
+            dayTime: s.dayTime ?? "",
+            cost: s.cost ?? "",
+            link: s.link ?? "",
           }));
         }
         if (Object.keys(updates).length > 0) await updateDoc(tripRef, updates);
@@ -300,6 +336,7 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
             startTime: a.startTime?.toDate?.()?.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }) ?? "",
             category: a.category,
             place: a.place,
+            linkedAccommodationId: a.linkedAccommodationId,
           })),
           existingAccommodations: accommodations.map(a => ({
             id: a.id,
@@ -323,11 +360,12 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
       if (data.operations?.length) {
         await applyOperations(data.operations);
       }
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       setMessages(prev => prev.filter(m => m.id !== "loading").concat({
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "Sorry, something went wrong. Please try again.",
+        content: `Sorry, something went wrong: ${msg}`,
       }));
     } finally {
       setLoading(false);

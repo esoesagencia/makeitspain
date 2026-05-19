@@ -377,15 +377,9 @@ export function ActivityForm({
             {/* 5. Category */}
             <AField label="Category">
               <ASelect value={form.category} onChange={(e) => {
-                const cat = e.target.value as ActivityCategory;
-                set("category", cat);
-                // Auto-fill title when switching to sleep_in_hotel on a blank new form
-                if (!isEdit && cat === "sleep_in_hotel" && !form.title.trim()) {
-                  set("title", "Sleep in Hotel / Accommodation");
-                }
+                set("category", e.target.value as ActivityCategory);
               }}>
                 <option value="activity">Activity</option>
-                <option value="sleep_in_hotel">Sleep in Hotel</option>
                 <option value="hotel">Hotel / Accommodation</option>
                 <option value="transfer">Transfer</option>
                 <option value="meal">Meal</option>
