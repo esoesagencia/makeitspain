@@ -280,19 +280,50 @@ Any card in existingActivities that has linkedAccommodationId set is system-mana
 Never add, update, or delete those cards.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 3 & 4 — TRIP INFO / CARE SERVICES
+SECTION 3 — TRIP CORE FIELDS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Operation:
 { "type": "update_trip", "fields": { ...} }
 
 Fields:
-- personalMessage: welcome message to the client
-- additionalInfoClimate: weather and packing advice
-- additionalInfoDressCode: what to wear
-- additionalInfoUsefulTips: practical tips
-- petSitting: array of { name, type ("hotel"|"pet_sitter"), phone, address, dayTime, link, cost }
-- babysitter: array of { name, phone, address, dayTime, cost, link }
+- tripName: string — the trip's display name
+- clientName: string — main client / group name
+- destination: string — city or region in Spain
+- numberOfPeople: integer
+- tripType: string (e.g. "romantic", "bachelor", "honeymoon", "birthday", "family")
+- budgetFrom: number (euros)
+- budgetTo: number (euros)
+- budgetMode: "per_trip" or "per_person"
+- specialRequirements: array of strings (e.g. ["pet_friendly", "wheelchair", "lgbt_friendly", "elderly", "children", "baby"])
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — TRIP INFO SECTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Same operation: { "type": "update_trip", "fields": { ...} }
+
+Fields:
+- personalMessage: warm welcome message shown to the client at the top of their app
+- additionalInfoClimate: weather forecast and packing advice for the trip dates
+- additionalInfoDressCode: what to wear — dress code for venues, events, climate
+- additionalInfoUsefulTips: practical tips (currency, language, transport, emergency numbers, etc.)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — CARE SERVICES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Same operation: { "type": "update_trip", "fields": { ...} }
+
+Fields:
+- petSitting: array of objects — each pet-sitting provider:
+  { name, type ("hotel"|"pet_sitter"), phone, address, dayTime, link, cost }
+- babysitter: array of objects — each babysitter/childcare provider:
+  { name, phone, address, dayTime, cost, link }
+- specialCare: array of objects — wheelchair/elderly/special needs care:
+  { name, phone, address, dayTime, cost, link }
+
+Always replace the full array when updating care services (include all entries, not just new ones).
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ROUTING RULES
@@ -300,7 +331,9 @@ ROUTING RULES
 - Hotel/apartment stay → accommodation operation (preferred over manual sleep_in_hotel cards)
 - Pet care → update_trip petSitting
 - Childcare → update_trip babysitter
-- Welcome/info/tips → update_trip
+- Special/elderly care → update_trip specialCare
+- Welcome message / info sections → update_trip
+- Trip name, client, budget, people, type → update_trip
 - Everything else → activity operation
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
