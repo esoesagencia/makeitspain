@@ -140,11 +140,12 @@ interface TransferMapPopupProps {
   from: Activity;
   to: Activity;
   initialMode: TransferMode;
+  travelOptions: TravelOption[];
   isOpen: boolean;
   onClose: () => void;
 }
 
-function TransferMapPopup({ from, to, initialMode, isOpen, onClose }: TransferMapPopupProps) {
+function TransferMapPopup({ from, to, initialMode, travelOptions, isOpen, onClose }: TransferMapPopupProps) {
   const [activeMode, setActiveMode] = useState<TransferMode>(initialMode);
   const [showTaxiApps, setShowTaxiApps] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -393,11 +394,12 @@ function TransferMapPopup({ from, to, initialMode, isOpen, onClose }: TransferMa
             {MODES.map((m) => {
               const active = activeMode === m.id;
               const color = m.id === "taxi" ? "#D94040" : m.id === "walking" ? "#16A34A" : "#1D4ED8";
+              const opt = travelOptions.find((o) => o.mode === m.id);
               return (
                 <button
                   key={m.id}
                   onClick={() => handleModeClick(m.id)}
-                  className="flex-1 flex flex-col items-center gap-1 py-3 rounded-xl transition-all duration-200 active:scale-95"
+                  className="flex-1 flex flex-col items-center gap-0.5 py-2.5 rounded-xl transition-all duration-200 active:scale-95"
                   style={{
                     background: active ? color : `${color}12`,
                     border: active ? "none" : `1px solid ${color}30`,
@@ -405,6 +407,11 @@ function TransferMapPopup({ from, to, initialMode, isOpen, onClose }: TransferMa
                 >
                   <span style={{ color: active ? "white" : color }}>{m.icon}</span>
                   <span className="text-[10px] font-semibold" style={{ color: active ? "white" : color }}>{m.label}</span>
+                  {opt && (
+                    <span className="text-[10px] font-bold tabular-nums" style={{ color: active ? "rgba(255,255,255,0.9)" : color }}>
+                      {formatGap(opt.durationMins)}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -447,18 +454,18 @@ export function TransferPlanCard({ from, to, nowMs }: TransferPlanCardProps) {
         body: JSON.stringify({ origin: from.address, destination: to.address }),
       });
       if (!res.ok) return;
-      const data = await res.json();
+      const data = await res.json() as { results: { mode: string; durationMinutes: number; durationText: string }[] };
       const modeMap: Record<string, TransferMode> = {
         driving: "taxi",
         walking: "walking",
         transit: "transit",
       };
-      const options: TravelOption[] = (data as { mode: string; durationMins: number; label: string }[])
+      const options: TravelOption[] = (data.results ?? [])
         .filter((d) => modeMap[d.mode])
         .map((d) => ({
           mode: modeMap[d.mode],
-          durationMins: d.durationMins,
-          label: d.label,
+          durationMins: d.durationMinutes,
+          label: d.durationText,
         }));
       setTravelOptions(options);
     } catch {
@@ -629,6 +636,7 @@ export function TransferPlanCard({ from, to, nowMs }: TransferPlanCardProps) {
         from={from}
         to={to}
         initialMode={activeMode}
+        travelOptions={travelOptions}
         isOpen={mapPopupOpen}
         onClose={() => setMapPopupOpen(false)}
       />

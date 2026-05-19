@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
 
   const results: TravelTimeResult[] = [];
 
+  const errors: string[] = [];
+
   await Promise.all(
     MODE_MAP.map(async (mode) => {
       const url = new URL("https://maps.googleapis.com/maps/api/distancematrix/json");
@@ -39,17 +41,22 @@ export async function POST(req: NextRequest) {
       url.searchParams.set("key", apiKey);
       url.searchParams.set("language", "en");
 
-      const res = await fetch(url.toString(), {
-        headers: { Referer: "https://makeitspain-app.vercel.app/" },
-      });
+      const res = await fetch(url.toString());
       const data = await res.json() as {
         status: string;
+        error_message?: string;
         rows: { elements: { status: string; duration: { value: number; text: string }; distance: { text: string } }[] }[];
       };
 
-      if (data.status !== "OK") return;
+      if (data.status !== "OK") {
+        errors.push(`${mode}: ${data.status}${data.error_message ? ` — ${data.error_message}` : ""}`);
+        return;
+      }
       const el = data.rows?.[0]?.elements?.[0];
-      if (!el || el.status !== "OK") return;
+      if (!el || el.status !== "OK") {
+        errors.push(`${mode}: element status ${el?.status ?? "missing"}`);
+        return;
+      }
 
       results.push({
         mode,
@@ -64,5 +71,5 @@ export async function POST(req: NextRequest) {
   const order: TravelMode[] = ["driving", "transit", "walking"];
   results.sort((a, b) => order.indexOf(a.mode) - order.indexOf(b.mode));
 
-  return NextResponse.json({ results } satisfies TravelTimeResponse);
+  return NextResponse.json({ results, errors } satisfies TravelTimeResponse & { errors: string[] });
 }

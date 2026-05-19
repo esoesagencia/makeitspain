@@ -199,7 +199,7 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
           const tripEndDate   = trip.endDate?.toDate?.()?.toISOString?.()?.slice(0, 10) ?? "";
           await syncHotelCardsForAccommodation(
             trip.id,
-            { id: accomRef.id, name: op.fields.name ?? "", nights },
+            { id: accomRef.id, name: op.fields.name ?? "", address: op.fields.address ?? "", nights },
             tripStartDate,
             tripEndDate,
           );

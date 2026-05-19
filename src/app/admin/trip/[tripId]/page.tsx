@@ -94,6 +94,7 @@ interface TransferInfo {
   gapMinutes: number;
   travelOptions: TravelTimeResult[] | null; // null = loading
   loadError: boolean;
+  errorMsg?: string;
 }
 
 // ─── Category labels ──────────────────────────────────────────────────────────
@@ -982,7 +983,9 @@ function TransferCard({ info, onModeChange }: {
       {info.travelOptions === null ? (
         <p className="text-xs text-[#9A7A78] animate-pulse">Calculating travel times…</p>
       ) : info.loadError ? (
-        <p className="text-xs text-[#9A7A78]">Could not calculate travel times</p>
+        <p className="text-xs text-[#E74C3C]">
+          {info.errorMsg ?? "Could not calculate travel times"}
+        </p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {info.travelOptions.map((opt) => {
@@ -1031,6 +1034,9 @@ export default function AdminTripPage() {
   const isDraggingRef = useRef(false);
   const [tripLoading, setTripLoading] = useState(true);
   const [transfers, setTransfers] = useState<Map<string, TransferInfo>>(new Map());
+  // Sync ref during render so effects always read fresh state without stale closures
+  const transfersRef = useRef<Map<string, TransferInfo>>(new Map());
+  transfersRef.current = transfers;
 
   const [editForm, setEditForm] = useState<TripEditState | null>(null);
   const [savingTrip, setSavingTrip] = useState(false);
@@ -1138,11 +1144,16 @@ export default function AdminTripPage() {
   }, [trip, activities, tripId]);
 
   // Calculate transfers when activities change
-  // activities is already sorted by sortOrder (the display order the admin chose).
   const fetchingRef = useRef<Set<string>>(new Set());
   useEffect(() => {
-    if (activities.length < 2) { setTransfers(new Map()); return; }
+    if (activities.length < 2) {
+      const empty = new Map<string, TransferInfo>();
+      transfersRef.current = empty;
+      setTransfers(empty);
+      return;
+    }
 
+    const current = transfersRef.current;
     const newTransfers = new Map<string, TransferInfo>();
 
     activities.forEach((act, i) => {
@@ -1153,20 +1164,23 @@ export default function AdminTripPage() {
       const gapMs = act.startTime.toMillis() - prev.endTime.toMillis();
       const gapMinutes = Math.max(0, Math.round(gapMs / 60_000));
 
-      const existing = transfers.get(key);
-      const sameAddresses = existing &&
+      const existing = current.get(key);
+      const sameAddresses = !!(existing &&
         existing.fromActivity.address === prev.address &&
-        existing.toActivity.address === act.address;
+        existing.toActivity.address === act.address);
+
+      // If either address is missing, don't pretend we're loading
+      const hasAddresses = !!(prev.address && act.address);
 
       newTransfers.set(key, {
         fromActivity: prev,
         toActivity: act,
         gapMinutes,
-        travelOptions: sameAddresses ? existing!.travelOptions : null,
+        travelOptions: !hasAddresses ? [] : sameAddresses ? existing!.travelOptions : null,
         loadError: sameAddresses ? existing!.loadError : false,
       });
 
-      if (!sameAddresses && prev.address && act.address && !fetchingRef.current.has(key)) {
+      if (hasAddresses && !sameAddresses && !fetchingRef.current.has(key)) {
         fetchingRef.current.add(key);
         fetch("/api/travel-time", {
           method: "POST",
@@ -1174,17 +1188,18 @@ export default function AdminTripPage() {
           body: JSON.stringify({ origin: prev.address, destination: act.address }),
         })
           .then((r) => r.json())
-          .then((data: { results: TravelTimeResult[] }) => {
-            setTransfers((prev) => {
-              const updated = new Map(prev);
+          .then((data: { results: TravelTimeResult[]; errors?: string[] }) => {
+            if (data.errors?.length) console.warn("[travel-time]", data.errors);
+            setTransfers((latest) => {
+              const updated = new Map(latest);
               const entry = updated.get(key);
-              if (entry) updated.set(key, { ...entry, travelOptions: data.results, loadError: false });
+              if (entry) updated.set(key, { ...entry, travelOptions: data.results ?? [], loadError: (data.results ?? []).length === 0, errorMsg: data.errors?.join("; ") });
               return updated;
             });
           })
           .catch(() => {
-            setTransfers((prev) => {
-              const updated = new Map(prev);
+            setTransfers((latest) => {
+              const updated = new Map(latest);
               const entry = updated.get(key);
               if (entry) updated.set(key, { ...entry, travelOptions: [], loadError: true });
               return updated;
@@ -1195,7 +1210,6 @@ export default function AdminTripPage() {
     });
 
     setTransfers(newTransfers);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activities]);
 
   // ── Drag & drop — reorders and updates date on cross-day moves ──────────────

@@ -1,5 +1,5 @@
 import {
-  collection, addDoc, getDocs, deleteDoc, doc, query, where, serverTimestamp,
+  collection, addDoc, getDocs, deleteDoc, doc, query, where, serverTimestamp, updateDoc,
 } from "firebase/firestore";
 import { db, COLLECTIONS, SUBCOLLECTIONS } from "@/lib/firebase/firestore";
 import { parseMadridDateTime, parseMadridDate } from "@/lib/utils/adminDatetime";
@@ -7,6 +7,7 @@ import { parseMadridDateTime, parseMadridDate } from "@/lib/utils/adminDatetime"
 interface AccomInfo {
   id: string;
   name: string;
+  address: string;
   nights: string[];
 }
 
@@ -44,6 +45,7 @@ export async function syncHotelCardsForAccommodation(
   const snap = await getDocs(query(actColl, where("linkedAccommodationId", "==", accom.id)));
 
   const toDelete: string[] = [];
+  const toUpdate: string[] = []; // cards to patch with new address
   const existingKeys = new Set<string>();
 
   snap.docs.forEach((docSnap) => {
@@ -56,12 +58,17 @@ export async function syncHotelCardsForAccommodation(
       toDelete.push(docSnap.id);
     } else {
       existingKeys.add(key);
+      // Patch address if it changed (e.g. accommodation address was updated)
+      if ((data.address as string) !== accom.address) {
+        toUpdate.push(docSnap.id);
+      }
     }
   });
 
-  if (toDelete.length > 0) {
-    await Promise.all(toDelete.map((id) => deleteDoc(doc(actColl, id))));
-  }
+  await Promise.all([
+    ...toDelete.map((id) => deleteDoc(doc(actColl, id))),
+    ...toUpdate.map((id) => updateDoc(doc(actColl, id), { address: accom.address })),
+  ]);
 
   // Build the set of morning dates this accommodation manages, then delete any
   // non-linked (orphaned) hotel morning cards for those same dates. These are
@@ -118,7 +125,7 @@ export async function syncHotelCardsForAccommodation(
         estimatedDuration:     0,
         category:              "sleep_in_hotel",
         place:                 accom.name,
-        address:               "",
+        address:               accom.address,
         recommendations:       null,
         contactPhone:          null,
         contactLink:           null,
@@ -161,7 +168,7 @@ export async function syncHotelCardsForAccommodation(
         estimatedDuration:     0,
         category:              "hotel",
         place:                 accom.name,
-        address:               "",
+        address:               accom.address,
         breakfastType:         "hotel_breakfast",
         recommendations:       null,
         contactPhone:          null,
