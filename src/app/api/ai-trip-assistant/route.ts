@@ -276,6 +276,8 @@ These are system-managed. You MUST NOT create, edit or delete them via activity 
 If the admin asks to change hotel nights or remove a hotel, use accommodation operations.
 
 ACCOMMODATION RULES — READ CAREFULLY:
+- The trip dates (startDate → endDate) are set by the admin and are FIXED. Never override them.
+- When adding a new accommodation, always calculate nights from the trip context: every date from startDate up to and including (endDate minus 1 day). Never use dates from any external document.
 - If existingAccommodations already contains an accommodation → use update_accommodation, NEVER add_accommodation
 - NEVER change the nights array of an existing accommodation unless the admin explicitly asks to change dates
 - When updating an existing accommodation, only update name/address/phone/type — leave nights untouched unless told otherwise

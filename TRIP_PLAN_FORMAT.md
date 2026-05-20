@@ -50,7 +50,7 @@ Currency is Euro. Tipping ~10% in restaurants is appreciated but not mandatory. 
 - name: Hotel Arts Barcelona
 - address: Carrer de la Marina, 19-21, 08005 Barcelona
 - contactPhone: +34 932 211 000
-- nights: 2025-06-10, 2025-06-11, 2025-06-12
+- nights: (auto-calculated from trip dates — do not specify)
 
 ---
 
