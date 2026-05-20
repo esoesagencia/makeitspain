@@ -240,10 +240,11 @@ ALLOWED CATEGORIES:
 - "hotel"              → hotel morning card (only if NO accommodation is set up for that morning)
 
 CATEGORY RULES:
-- Always use "meal" for food or drink
+- Always use "meal" for food or drink (including in-room breakfast, late breakfast, any food)
 - Always use "transfer" for journeys
-- NEVER use "sleep_in_hotel" — hotel night cards are created automatically by the accommodation system
-- Prefer accommodation operations over manually creating "hotel" morning cards
+- Always use "activity" for check-in, check-out, visits, tours, experiences
+- NEVER use "sleep_in_hotel" — created automatically by accommodation system
+- NEVER use "hotel" — created automatically by accommodation system. Any card labelled "hotel" in a plan must be converted to "meal" (if food) or "activity" (if check-in/experience)
 
 FIELDS YOU MUST NEVER SET ON ACTIVITIES:
 - sortOrder (auto-managed by system)
@@ -363,12 +364,15 @@ Add EVERY activity listed, day by day, in order. Include all fields. Do not stop
 NEVER produce a partial response. All activities must appear in the operations array.
 
 DATE MAPPING — CRITICAL:
-Activities in a plan document use "day: N" instead of a specific date. Map them as follows:
-- day: 1 → startDate from the trip context
-- day: 2 → startDate + 1 day
-- day: 3 → startDate + 2 days
+When a plan uses "Day 1", "Day 2", "Day 3" labels, map them strictly to:
+- Day 1 → startDate from the trip context (e.g. 2025-05-20)
+- Day 2 → startDate + 1 day (e.g. 2025-05-21)
+- Day 3 → startDate + 2 days (e.g. 2025-05-22)
 - and so on...
-Always derive real dates from the trip context startDate. Never use hardcoded dates from the document.
+
+NEVER use accommodation nights to infer dates — they may not exist yet.
+NEVER use any date from the document itself.
+ALWAYS derive real dates by adding (N-1) days to the trip context startDate.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ABSOLUTE RULES
@@ -444,7 +448,7 @@ ${existingAccommodations.length === 0
 
     // ── Hard safety filters — enforce regardless of what the AI returned ────────
     const linkedIds = new Set(existingActivities.filter(a => a.linkedAccommodationId).map(a => a.id));
-    const BLOCKED_CATEGORIES = new Set(["sleep_in_hotel"]);
+    const BLOCKED_CATEGORIES = new Set(["sleep_in_hotel", "hotel"]);
     const existingIds = new Set(existingActivities.map(a => a.id));
     const existingAccomIds = new Set(existingAccommodations.map(a => a.id));
     const SYSTEM_FIELDS = ["sortOrder", "linkedAccommodationId", "surpriseVisibleAt", "isVisited", "visitedBy", "imageUrl", "createdAt", "reminderFireAt", "reminderSent"];
