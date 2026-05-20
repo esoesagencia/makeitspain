@@ -210,26 +210,47 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
 
       // ── Accommodation operations ──────────────────────────────────────────
       } else if (op.type === "add_accommodation" && op.fields) {
-        const maxAccomSort = accommodations.length > 0 ? Math.max(...accommodations.map(a => a.sortOrder ?? 0)) : 0;
-        const accomRef = await addDoc(accomColl, {
-          type: op.fields.type ?? "hotel",
-          name: op.fields.name ?? "",
-          address: op.fields.address ?? "",
-          contactPhone: op.fields.contactPhone ?? "",
-          nights: op.fields.nights ?? [],
-          sortOrder: maxAccomSort + 10,
-        });
-        // Auto-create sleep_in_hotel + hotel morning cards
-        const nights = op.fields.nights ?? [];
-        if (nights.length > 0) {
+        // Hard guard: if an accommodation already exists, redirect to update (never create duplicate)
+        if (accommodations.length > 0) {
+          const existing = accommodations[0];
+          const ref = doc(db, COLLECTIONS.TRIPS, trip.id, SUBCOLLECTIONS.ACCOMMODATIONS, existing.id);
+          const updates: Record<string, unknown> = {};
+          if (op.fields.type !== undefined) updates.type = op.fields.type;
+          if (op.fields.name !== undefined) updates.name = op.fields.name;
+          if (op.fields.address !== undefined) updates.address = op.fields.address;
+          if (op.fields.contactPhone !== undefined) updates.contactPhone = op.fields.contactPhone;
+          // Never touch nights — they are set by the admin
+          if (Object.keys(updates).length > 0) await updateDoc(ref, updates);
+        } else {
+          // No accommodation yet — calculate nights from trip dates, never trust AI-provided nights
           const tripStartDate = trip.startDate?.toDate?.()?.toISOString?.()?.slice(0, 10) ?? "";
           const tripEndDate   = trip.endDate?.toDate?.()?.toISOString?.()?.slice(0, 10) ?? "";
-          await syncHotelCardsForAccommodation(
-            trip.id,
-            { id: accomRef.id, name: op.fields.name ?? "", address: op.fields.address ?? "", nights },
-            tripStartDate,
-            tripEndDate,
-          );
+          const nights: string[] = [];
+          if (tripStartDate && tripEndDate) {
+            const cur = new Date(tripStartDate + "T00:00:00Z");
+            const end = new Date(tripEndDate + "T00:00:00Z");
+            while (cur < end) {
+              nights.push(cur.toISOString().slice(0, 10));
+              cur.setUTCDate(cur.getUTCDate() + 1);
+            }
+          }
+          const maxAccomSort = Math.max(...accommodations.map(a => a.sortOrder ?? 0), 0);
+          const accomRef = await addDoc(accomColl, {
+            type: op.fields.type ?? "hotel",
+            name: op.fields.name ?? "",
+            address: op.fields.address ?? "",
+            contactPhone: op.fields.contactPhone ?? "",
+            nights,
+            sortOrder: maxAccomSort + 10,
+          });
+          if (nights.length > 0) {
+            await syncHotelCardsForAccommodation(
+              trip.id,
+              { id: accomRef.id, name: op.fields.name ?? "", address: op.fields.address ?? "", nights },
+              tripStartDate,
+              tripEndDate,
+            );
+          }
         }
 
       } else if (op.type === "update_accommodation" && op.accommodationId && op.fields) {
