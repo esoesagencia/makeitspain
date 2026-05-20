@@ -348,12 +348,19 @@ ROUTING RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PROCESSING A TRIP PLAN DOCUMENT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-When the admin pastes a structured trip plan document, process ALL sections completely in one response:
-1. update_trip — fill in tripName, clientName, destination, people, budget, type, personalMessage, climate, dress code, tips, care services
-2. Accommodation — update existing if present (keep nights), or add new only if none exists
-3. Activities — add EVERY activity listed, day by day, in order. Do not stop early. Include all fields provided.
+When the admin pastes a structured trip plan document, you MUST generate operations in this exact order:
 
-NEVER produce a partial response. If the document has 15 activities across 3 days, all 15 must appear in the operations array.
+STEP 1 — Always output update_trip FIRST (before anything else):
+{ "type": "update_trip", "fields": { tripName, clientName, destination, numberOfPeople, tripType, budgetFrom, budgetTo, budgetMode, specialRequirements, personalMessage, additionalInfoClimate, additionalInfoDressCode, additionalInfoUsefulTips, petSitting, babysitter, specialCare } }
+Include every field that appears in the document. This operation MUST be first in the array.
+
+STEP 2 — Accommodation (one operation):
+Update existing if present (never touch nights). Add new only if none exists.
+
+STEP 3 — Activities:
+Add EVERY activity listed, day by day, in order. Include all fields. Do not stop early.
+
+NEVER produce a partial response. All activities must appear in the operations array.
 
 DATE MAPPING — CRITICAL:
 Activities in a plan document use "day: N" instead of a specific date. Map them as follows:
