@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, getDocs } from "firebase/firestore";
 import { db, COLLECTIONS, SUBCOLLECTIONS } from "@/lib/firebase/firestore";
 import { parseMadridDateTime, parseMadridDate } from "@/lib/utils/adminDatetime";
 import { syncHotelCardsForAccommodation } from "@/lib/utils/hotelCards";
@@ -113,6 +113,47 @@ function buildFirestoreActivity(fields: AIActivityFields, trip: Trip, sortOrder:
     reminderSent: false,
     createdAt: serverTimestamp(),
   };
+}
+
+// ─── Re-sort all activities so hotel morning is always first and hotel night is always last ──
+
+async function resortDayActivities(tripId: string) {
+  const actColl = collection(db, COLLECTIONS.TRIPS, tripId, SUBCOLLECTIONS.ACTIVITIES);
+  const snap = await getDocs(actColl);
+
+  // Group by Madrid date
+  const byDate = new Map<string, { id: string; category: string; startTimeMs: number }[]>();
+  snap.docs.forEach(d => {
+    const data = d.data();
+    const dateKey = (data.date as { toDate(): Date }).toDate()
+      .toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+    const startTimeMs = (data.startTime as { toDate(): Date } | null)?.toDate?.()?.getTime?.() ?? 0;
+    if (!byDate.has(dateKey)) byDate.set(dateKey, []);
+    byDate.get(dateKey)!.push({ id: d.id, category: data.category as string, startTimeMs });
+  });
+
+  let globalSort = 0;
+  const sortedDates = [...byDate.keys()].sort();
+
+  const writes: Promise<void>[] = [];
+  for (const date of sortedDates) {
+    const day = byDate.get(date)!;
+    day.sort((a, b) => {
+      // hotel morning (category: "hotel") always first
+      if (a.category === "hotel" && b.category !== "hotel") return -1;
+      if (b.category === "hotel" && a.category !== "hotel") return 1;
+      // sleep_in_hotel always last
+      if (a.category === "sleep_in_hotel" && b.category !== "sleep_in_hotel") return 1;
+      if (b.category === "sleep_in_hotel" && a.category !== "sleep_in_hotel") return -1;
+      // everything else by startTime
+      return a.startTimeMs - b.startTimeMs;
+    });
+    for (const act of day) {
+      globalSort += 10;
+      writes.push(updateDoc(doc(actColl, act.id), { sortOrder: globalSort }));
+    }
+  }
+  await Promise.all(writes);
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -324,6 +365,8 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
         if (Object.keys(updates).length > 0) await updateDoc(tripRef, updates);
       }
     }
+    // Re-sort all activities: hotel morning always first, sleep_in_hotel always last
+    await resortDayActivities(trip.id);
     onActivitiesChanged();
   }, [trip, activities, accommodations, onActivitiesChanged]);
 
