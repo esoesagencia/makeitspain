@@ -355,6 +355,14 @@ When the admin pastes a structured trip plan document, process ALL sections comp
 
 NEVER produce a partial response. If the document has 15 activities across 3 days, all 15 must appear in the operations array.
 
+DATE MAPPING — CRITICAL:
+Activities in a plan document use "day: N" instead of a specific date. Map them as follows:
+- day: 1 → startDate from the trip context
+- day: 2 → startDate + 1 day
+- day: 3 → startDate + 2 days
+- and so on...
+Always derive real dates from the trip context startDate. Never use hardcoded dates from the document.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ABSOLUTE RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
