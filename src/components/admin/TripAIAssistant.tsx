@@ -63,7 +63,7 @@ declare global {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function buildFirestoreActivity(fields: AIActivityFields, trip: Trip, sortOrder: number) {
-  const dateStr = fields.date ?? trip.startDate?.toDate?.()?.toISOString?.()?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
+  const dateStr = fields.date ?? trip.startDate?.toDate?.()?.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" }) ?? new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
   const startTimeStr = fields.startTime ?? "10:00";
   const endTimeStr = fields.endTime ?? fields.startTime ?? "11:00";
 
@@ -184,7 +184,7 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
         if (fields.specialBreakfastInfo !== undefined) updates.specialBreakfastInfo = fields.specialBreakfastInfo;
         if (fields.specialBreakfastContact !== undefined) updates.specialBreakfastContact = fields.specialBreakfastContact;
         const existing = activities.find(a => a.id === op.activityId);
-        const dateStr = fields.date ?? existing?.date?.toDate?.()?.toISOString?.()?.slice(0, 10);
+        const dateStr = fields.date ?? existing?.date?.toDate?.()?.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
         if (dateStr) {
           if (fields.startTime) updates.startTime = parseMadridDateTime(dateStr, fields.startTime);
           if (fields.endTime) updates.endTime = parseMadridDateTime(dateStr, fields.endTime);
@@ -222,15 +222,17 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
           // Never touch nights — they are set by the admin
           if (Object.keys(updates).length > 0) await updateDoc(ref, updates);
         } else {
-          // No accommodation yet — calculate nights from trip dates, never trust AI-provided nights
-          const tripStartDate = trip.startDate?.toDate?.()?.toISOString?.()?.slice(0, 10) ?? "";
-          const tripEndDate   = trip.endDate?.toDate?.()?.toISOString?.()?.slice(0, 10) ?? "";
+          // No accommodation yet — calculate nights from trip dates in Madrid timezone, never trust AI-provided nights
+          const toMadridDate = (ts: { toDate(): Date } | undefined) =>
+            ts?.toDate?.()?.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" }) ?? "";
+          const tripStartDate = toMadridDate(trip.startDate);
+          const tripEndDate   = toMadridDate(trip.endDate);
           const nights: string[] = [];
           if (tripStartDate && tripEndDate) {
-            const cur = new Date(tripStartDate + "T00:00:00Z");
-            const end = new Date(tripEndDate + "T00:00:00Z");
+            const cur = new Date(tripStartDate + "T12:00:00Z"); // noon UTC avoids DST edge cases
+            const end = new Date(tripEndDate   + "T12:00:00Z");
             while (cur < end) {
-              nights.push(cur.toISOString().slice(0, 10));
+              nights.push(cur.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" }));
               cur.setUTCDate(cur.getUTCDate() + 1);
             }
           }
@@ -260,7 +262,7 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
         if (op.fields.name !== undefined) updates.name = op.fields.name;
         if (op.fields.address !== undefined) updates.address = op.fields.address;
         if (op.fields.contactPhone !== undefined) updates.contactPhone = op.fields.contactPhone;
-        if (op.fields.nights !== undefined) updates.nights = op.fields.nights;
+        // NEVER allow AI to change nights — admin-set dates are locked
         await updateDoc(ref, updates);
 
       } else if (op.type === "delete_accommodation" && op.accommodationId) {
@@ -350,8 +352,8 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
             tripName: trip.tripName,
             clientName: trip.clientName,
             destination: trip.destination,
-            startDate: trip.startDate?.toDate?.()?.toISOString?.()?.slice(0, 10) ?? "",
-            endDate: trip.endDate?.toDate?.()?.toISOString?.()?.slice(0, 10) ?? "",
+            startDate: trip.startDate?.toDate?.()?.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" }) ?? "",
+            endDate: trip.endDate?.toDate?.()?.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" }) ?? "",
             numberOfPeople: trip.numberOfPeople,
             tripType: trip.tripType,
             budgetFrom: trip.budgetFrom,
@@ -366,7 +368,7 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
           existingActivities: activities.map(a => ({
             id: a.id,
             title: a.title,
-            date: a.date?.toDate?.()?.toISOString?.()?.slice(0, 10) ?? "",
+            date: a.date?.toDate?.()?.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" }) ?? "",
             startTime: a.startTime?.toDate?.()?.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }) ?? "",
             category: a.category,
             place: a.place,
