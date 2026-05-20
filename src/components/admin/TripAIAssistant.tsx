@@ -327,6 +327,20 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
     onActivitiesChanged();
   }, [trip, activities, accommodations, onActivitiesChanged]);
 
+  // ── Direct plan execution (bypasses Gemini entirely) ────────────────────────
+  function extractDirectPlan(text: string): AIOperation[] | null {
+    const marker = text.indexOf("MAKEITSPAIN_PLAN:");
+    if (marker === -1) return null;
+    try {
+      const jsonStr = text.slice(marker + "MAKEITSPAIN_PLAN:".length).trim();
+      const parsed = JSON.parse(jsonStr) as { operations: AIOperation[] };
+      if (!Array.isArray(parsed.operations)) return null;
+      return parsed.operations;
+    } catch {
+      return null;
+    }
+  }
+
   // ── Send message ─────────────────────────────────────────────────────────────
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
@@ -337,6 +351,32 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
     const loadingMsg: ChatMessage = { id: "loading", role: "assistant", content: "", loading: true };
     setMessages(prev => [...prev, userMsg, loadingMsg]);
     setLoading(true);
+
+    // ── Direct plan execution — skip Gemini if message contains a plan JSON ──
+    const directOps = extractDirectPlan(text.trim());
+    if (directOps) {
+      try {
+        await applyOperations(directOps);
+        const count = directOps.length;
+        const aiMsg: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: `Plan executed directly — ${count} operation${count !== 1 ? "s" : ""} applied with no AI interpretation.`,
+          operations: directOps,
+        };
+        setMessages(prev => prev.filter(m => m.id !== "loading").concat(aiMsg));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setMessages(prev => prev.filter(m => m.id !== "loading").concat({
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: `Plan execution failed: ${msg}`,
+        }));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     const history: AIMessage[] = [...messages, userMsg]
       .filter(m => !m.loading)
