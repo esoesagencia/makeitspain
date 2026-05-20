@@ -467,10 +467,15 @@ ${existingAccommodations.length === 0
         if (op.type === "delete" && "activityId" in op && op.activityId && !existingIds.has(op.activityId)) return false;
         if (op.type === "update_accommodation" && "accommodationId" in op && op.accommodationId && !existingAccomIds.has(op.accommodationId)) return false;
         if (op.type === "delete_accommodation" && "accommodationId" in op && op.accommodationId && !existingAccomIds.has(op.accommodationId)) return false;
-        // Strip all system-managed fields from any activity/accommodation operation
+        // Strip system-managed fields from activity operations
         if ("fields" in op && op.fields) {
           const f = op.fields as Record<string, unknown>;
           SYSTEM_FIELDS.forEach(k => delete f[k]);
+        }
+        // Strip nights from ALL accommodation operations — dates are always calculated
+        // from the admin-set trip dates on the client, never from AI output
+        if ((op.type === "add_accommodation" || op.type === "update_accommodation") && "fields" in op && op.fields) {
+          delete (op.fields as Record<string, unknown>).nights;
         }
         return true;
       });
