@@ -377,44 +377,58 @@ function DayPlan({ group, nowMs }: { group: DayGroup; nowMs: number }) {
           sticky elements give clamped getBoundingClientRect() which breaks scroll math. */}
       <div className="lg:hidden pt-3 pb-[60vh]">
         <div key="__start__" data-day-start={group.dateKey} style={{ height: 0 }} />
-        {group.activities.flatMap((activity, idx) => {
-          const prev = group.activities[idx - 1];
-          const showTransfer = idx > 0 && prev.address && activity.address &&
-            !(activity.category === "hotel" && activity.estimatedDuration === 0);
-          const stickyTop = MOBILE_CARD_TOP + idx * PEEK_HEIGHT;
+        {(() => {
+          let stackPos = 0;
+          return group.activities.flatMap((activity, idx) => {
+            const prev = group.activities[idx - 1];
+            const showTransfer = idx > 0 && prev.address && activity.address &&
+              !(activity.category === "hotel" && activity.estimatedDuration === 0);
 
-          const items: React.ReactNode[] = [];
+            const items: React.ReactNode[] = [];
 
-          // Transfer cards scroll normally (non-sticky), rendered as direct siblings
-          if (showTransfer) {
+            // All sticky wrappers get the SAME z-index so the browser uses DOM paint
+            // order to resolve stacking: later in DOM = painted on top. The DOM order
+            // (activity 0 → transfer → activity 1 → transfer → activity 2 ...) is already
+            // correct, so this gives the right layering without any GPU compositor tricks.
+            if (showTransfer) {
+              const transferTop = MOBILE_CARD_TOP + stackPos * PEEK_HEIGHT;
+              stackPos++;
+              items.push(
+                <div key={`transfer-${activity.id}`} className="mb-3" style={{ position: "sticky", top: transferTop, zIndex: 1 }}>
+                  <TransferPlanCard from={prev} to={activity} nowMs={nowMs} />
+                </div>
+              );
+            }
+
+            const activityTop = MOBILE_CARD_TOP + stackPos * PEEK_HEIGHT;
+            stackPos++;
             items.push(
-              <div key={`transfer-${activity.id}`} className="mb-3" style={{ zIndex: 0, position: "relative" }}>
-                <TransferPlanCard from={prev} to={activity} nowMs={nowMs} />
+              <div
+                key={activity.id}
+                className="mb-3"
+                style={{
+                  position: "sticky",
+                  top: activityTop,
+                  zIndex: 1,
+                }}
+              >
+                <div
+                  className="animate-fade-up"
+                  style={{
+                    animationDelay: `${idx * 60}ms`,
+                    animationFillMode: "both",
+                    borderRadius: 16,
+                    boxShadow: "0 2px 12px rgba(120,60,50,0.10), 0 1px 3px rgba(120,60,50,0.06)",
+                  }}
+                >
+                  <ActivityPlanCard activity={activity} nowMs={nowMs} />
+                </div>
               </div>
             );
-          }
 
-          // Activity card — sticky, direct sibling → stacks correctly on scroll
-          items.push(
-            <div
-              key={activity.id}
-              className="animate-fade-up mb-3"
-              style={{
-                position: "sticky",
-                top: stickyTop,
-                zIndex: idx + 1,
-                animationDelay: `${idx * 60}ms`,
-                animationFillMode: "both",
-                borderRadius: 16,
-                boxShadow: "0 2px 12px rgba(120,60,50,0.10), 0 1px 3px rgba(120,60,50,0.06)",
-              }}
-            >
-              <ActivityPlanCard activity={activity} nowMs={nowMs} />
-            </div>
-          );
-
-          return items;
-        })}
+            return items;
+          });
+        })()}
         <div key="__end__" data-day-end={group.dateKey} style={{ height: 0 }} />
       </div>
 
@@ -422,53 +436,62 @@ function DayPlan({ group, nowMs }: { group: DayGroup; nowMs: number }) {
           All sticky siblings must share the same parent — no per-card wrapper divs. */}
       <div className="hidden lg:block pt-4 pb-[60vh]">
         <div key="__start__" data-day-start={group.dateKey} style={{ height: 0 }} />
-        {group.activities.flatMap((activity, idx) => {
-          const prev = group.activities[idx - 1];
-          const showTransfer = idx > 0 && prev.address && activity.address &&
-            !(activity.category === "hotel" && activity.estimatedDuration === 0);
-          // Desktop: header (~65px) + progress bar (50px). Each card peeks PEEK_HEIGHT px.
-          const stickyTop = DESKTOP_CARD_TOP + idx * PEEK_HEIGHT;
+        {(() => {
+          let stackPos = 0;
+          return group.activities.flatMap((activity, idx) => {
+            const prev = group.activities[idx - 1];
+            const showTransfer = idx > 0 && prev.address && activity.address &&
+              !(activity.category === "hotel" && activity.estimatedDuration === 0);
 
-          const items: React.ReactNode[] = [];
+            const items: React.ReactNode[] = [];
 
-          if (showTransfer) {
+            if (showTransfer) {
+              const transferTop = DESKTOP_CARD_TOP + stackPos * PEEK_HEIGHT;
+              stackPos++;
+              items.push(
+                <div key={`transfer-${activity.id}`} className="ml-14 mb-2" style={{ position: "sticky", top: transferTop, zIndex: 1 }}>
+                  <TransferPlanCard from={prev} to={activity} nowMs={nowMs} />
+                </div>
+              );
+            }
+
+            const activityTop = DESKTOP_CARD_TOP + stackPos * PEEK_HEIGHT;
+            stackPos++;
             items.push(
-              <div key={`transfer-${activity.id}`} className="ml-14 mb-2" style={{ position: "relative", zIndex: 0 }}>
-                <TransferPlanCard from={prev} to={activity} nowMs={nowMs} />
+              <div
+                key={activity.id}
+                className="mb-2"
+                style={{
+                  position: "sticky",
+                  top: activityTop,
+                  zIndex: 1,
+                }}
+              >
+                {/* Animation wrapper — must NOT be on the sticky element itself */}
+                <div
+                  className="animate-fade-up flex items-start gap-5"
+                  style={{ animationDelay: `${idx * 80}ms`, animationFillMode: "both" }}
+                >
+                  {/* Step dot */}
+                  <div className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-white"
+                    style={{
+                      border: "2px solid rgba(217,64,64,0.25)",
+                      boxShadow: "0 2px 8px rgba(217,64,64,0.1)",
+                      zIndex: 1,
+                    }}>
+                    <span className="text-[11px] font-bold text-[#D94040]">{idx + 1}</span>
+                  </div>
+                  {/* Card */}
+                  <div className="flex-1" style={{ borderRadius: 16, boxShadow: "0 2px 12px rgba(120,60,50,0.10)" }}>
+                    <ActivityPlanCard activity={activity} nowMs={nowMs} />
+                  </div>
+                </div>
               </div>
             );
-          }
 
-          items.push(
-            <div
-              key={activity.id}
-              className="animate-fade-up flex items-start gap-5 mb-2"
-              style={{
-                position: "sticky",
-                top: stickyTop,
-                zIndex: idx + 1,
-                animationDelay: `${idx * 80}ms`,
-                animationFillMode: "both",
-              }}
-            >
-              {/* Step dot */}
-              <div className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-white"
-                style={{
-                  border: "2px solid rgba(217,64,64,0.25)",
-                  boxShadow: "0 2px 8px rgba(217,64,64,0.1)",
-                  zIndex: 1,
-                }}>
-                <span className="text-[11px] font-bold text-[#D94040]">{idx + 1}</span>
-              </div>
-              {/* Card */}
-              <div className="flex-1" style={{ borderRadius: 16, boxShadow: "0 2px 12px rgba(120,60,50,0.10)" }}>
-                <ActivityPlanCard activity={activity} nowMs={nowMs} />
-              </div>
-            </div>
-          );
-
-          return items;
-        })}
+            return items;
+          });
+        })()}
         <div key="__end__" data-day-end={group.dateKey} style={{ height: 0 }} />
       </div>
     </div>
