@@ -1,7 +1,5 @@
 "use client";
 
-/** Deterministic avatar — cartoon animal SVGs in coral/orange palette */
-
 function hashUid(uid: string): number {
   let h = 5381;
   for (let i = 0; i < uid.length; i++) {
@@ -11,308 +9,153 @@ function hashUid(uid: string): number {
   return h;
 }
 
-// ─── Coral/orange palette ─────────────────────────────────────────────────────
-// deep:    #B83228   coral dark
-// mid:     #D94040   coral
-// warm:    #E05848   coral mid
-// orange:  #E87030   orange coral
-// light:   #F0A060   light orange
-// pale:    #F5C090   pale orange
-// peach:   #FAD8C0   peach
-// cream:   #FDE8D8   cream
-// white:   #FFFFFF
-// pupil:   #2A0808   dark brown-red
+// ─── Abstract geometric patterns ──────────────────────────────────────────────
+// All viewBox="0 0 100 100". Clipped to a circle by the container.
 
-// ─── Animals ──────────────────────────────────────────────────────────────────
-
-function Fox() {
+function PatternDiamonds() {
   return (
     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      {/* Ears */}
-      <polygon points="18,52 30,18 48,47" fill="#B83228"/>
-      <polygon points="23,50 31,26 43,47" fill="#FAD8C0"/>
-      <polygon points="82,52 70,18 52,47" fill="#B83228"/>
-      <polygon points="77,50 69,26 57,47" fill="#FAD8C0"/>
-      {/* Head */}
-      <circle cx="50" cy="59" r="33" fill="#D94040"/>
-      {/* Muzzle */}
-      <ellipse cx="50" cy="71" rx="20" ry="15" fill="#FDE8D8"/>
-      {/* Eyes */}
-      <circle cx="37" cy="52" r="7" fill="white"/>
-      <circle cx="63" cy="52" r="7" fill="white"/>
-      <circle cx="38" cy="53" r="4" fill="#2A0808"/>
-      <circle cx="64" cy="53" r="4" fill="#2A0808"/>
-      <circle cx="40" cy="51" r="1.5" fill="white"/>
-      <circle cx="66" cy="51" r="1.5" fill="white"/>
-      {/* Nose */}
-      <ellipse cx="50" cy="65" rx="4.5" ry="3.5" fill="#2A0808"/>
-      <path d="M46,68 Q50,73 54,68" fill="none" stroke="#2A0808" strokeWidth="1.5" strokeLinecap="round"/>
+      <rect width="100" height="100" fill="#FDE0D8"/>
+      <polygon points="50,2 98,50 50,98 2,50" fill="#D94040"/>
+      <polygon points="50,26 74,50 50,74 26,50" fill="#E87030"/>
+      <polygon points="50,40 60,50 50,60 40,50" fill="#FDE0D8"/>
     </svg>
   );
 }
 
-function Bear() {
+function PatternStripes() {
   return (
     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      {/* Ears */}
-      <circle cx="25" cy="30" r="17" fill="#B83228"/>
-      <circle cx="75" cy="30" r="17" fill="#B83228"/>
-      <circle cx="25" cy="30" r="10" fill="#E05848"/>
-      <circle cx="75" cy="30" r="10" fill="#E05848"/>
-      {/* Head */}
-      <circle cx="50" cy="58" r="35" fill="#D94040"/>
-      {/* Muzzle */}
-      <ellipse cx="50" cy="71" rx="18" ry="13" fill="#F5C090"/>
-      {/* Eyes */}
-      <circle cx="37" cy="50" r="7" fill="white"/>
-      <circle cx="63" cy="50" r="7" fill="white"/>
-      <circle cx="37" cy="51" r="4.5" fill="#2A0808"/>
-      <circle cx="63" cy="51" r="4.5" fill="#2A0808"/>
-      <circle cx="39" cy="49" r="1.5" fill="white"/>
-      <circle cx="65" cy="49" r="1.5" fill="white"/>
-      {/* Nose */}
-      <ellipse cx="50" cy="65" rx="5" ry="4" fill="#2A0808"/>
-      <path d="M46,69 Q50,74 54,69" fill="none" stroke="#2A0808" strokeWidth="1.5" strokeLinecap="round"/>
+      <rect width="100" height="100" fill="#D94040"/>
+      <polygon points="-5,35 35,-5 55,-5 -5,55" fill="white" opacity="0.85"/>
+      <polygon points="-5,75 75,-5 95,-5 -5,95" fill="white" opacity="0.85"/>
+      <polygon points="45,105 105,45 105,65 65,105" fill="white" opacity="0.85"/>
+      <polygon points="5,105 105,5 105,25 25,105" fill="#B83228" opacity="0.45"/>
+      <polygon points="65,105 105,65 105,85 85,105" fill="#E87030" opacity="0.6"/>
     </svg>
   );
 }
 
-function Bunny() {
+function PatternScales() {
   return (
     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      {/* Ears */}
-      <ellipse cx="34" cy="27" rx="11" ry="23" fill="#E05848"/>
-      <ellipse cx="66" cy="27" rx="11" ry="23" fill="#E05848"/>
-      <ellipse cx="34" cy="27" rx="6" ry="17" fill="#FAD8C0"/>
-      <ellipse cx="66" cy="27" rx="6" ry="17" fill="#FAD8C0"/>
-      {/* Head */}
-      <circle cx="50" cy="62" r="32" fill="#F0A060"/>
-      {/* Cheek blush */}
-      <ellipse cx="33" cy="70" rx="9" ry="6" fill="#D94040" opacity="0.35"/>
-      <ellipse cx="67" cy="70" rx="9" ry="6" fill="#D94040" opacity="0.35"/>
-      {/* Eyes */}
-      <circle cx="37" cy="55" r="7" fill="white"/>
-      <circle cx="63" cy="55" r="7" fill="white"/>
-      <circle cx="37" cy="56" r="4.5" fill="#2A0808"/>
-      <circle cx="63" cy="56" r="4.5" fill="#2A0808"/>
-      <circle cx="39" cy="54" r="1.5" fill="white"/>
-      <circle cx="65" cy="54" r="1.5" fill="white"/>
-      {/* Nose */}
-      <ellipse cx="50" cy="67" rx="3.5" ry="2.5" fill="#B83228"/>
-      <path d="M47,70 Q50,74 53,70" fill="none" stroke="#B83228" strokeWidth="1.2" strokeLinecap="round"/>
+      <rect width="100" height="100" fill="#FDE8D8"/>
+      <path d="M-2,38 Q24,4 50,38 L50,105 L-2,105Z" fill="#D94040"/>
+      <path d="M50,38 Q76,4 102,38 L102,105 L50,105Z" fill="#B83228"/>
+      <path d="M-26,72 Q0,38 26,72 L26,105 L-26,105Z" fill="#E87030"/>
+      <path d="M26,72 Q52,38 78,72 L78,105 L26,105Z" fill="#D94040"/>
+      <path d="M74,72 Q100,38 126,72 L126,105 L74,105Z" fill="#B83228"/>
     </svg>
   );
 }
 
-function Cat() {
+function PatternChevron() {
   return (
     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      {/* Ears */}
-      <polygon points="20,54 30,22 45,50" fill="#B83228"/>
-      <polygon points="25,52 32,28 42,50" fill="#FAD8C0"/>
-      <polygon points="80,54 70,22 55,50" fill="#B83228"/>
-      <polygon points="75,52 68,28 58,50" fill="#FAD8C0"/>
-      {/* Head */}
-      <circle cx="50" cy="61" r="33" fill="#E05848"/>
-      {/* Muzzle */}
-      <ellipse cx="50" cy="72" rx="17" ry="12" fill="#FDE8D8"/>
-      {/* Cheek blush */}
-      <ellipse cx="33" cy="69" rx="8" ry="5" fill="#B83228" opacity="0.3"/>
-      <ellipse cx="67" cy="69" rx="8" ry="5" fill="#B83228" opacity="0.3"/>
-      {/* Eyes — amber to pop against red */}
-      <ellipse cx="37" cy="55" rx="7" ry="7" fill="#F5C090"/>
-      <ellipse cx="63" cy="55" rx="7" ry="7" fill="#F5C090"/>
-      <ellipse cx="37" cy="55" rx="3" ry="6" fill="#2A0808"/>
-      <ellipse cx="63" cy="55" rx="3" ry="6" fill="#2A0808"/>
-      <circle cx="39" cy="53" r="1.3" fill="white"/>
-      <circle cx="65" cy="53" r="1.3" fill="white"/>
-      {/* Nose */}
-      <polygon points="50,65 47,68 53,68" fill="#B83228"/>
-      {/* Whiskers */}
-      <line x1="18" y1="68" x2="40" y2="70" stroke="#FDE8D8" strokeWidth="1.2" strokeLinecap="round"/>
-      <line x1="18" y1="72" x2="40" y2="72" stroke="#FDE8D8" strokeWidth="1.2" strokeLinecap="round"/>
-      <line x1="82" y1="68" x2="60" y2="70" stroke="#FDE8D8" strokeWidth="1.2" strokeLinecap="round"/>
-      <line x1="82" y1="72" x2="60" y2="72" stroke="#FDE8D8" strokeWidth="1.2" strokeLinecap="round"/>
+      <rect width="100" height="100" fill="#FDE0D8"/>
+      <polygon points="0,0 50,28 100,0 100,20 50,48 0,20" fill="#D94040"/>
+      <polygon points="0,18 50,46 100,18 100,38 50,66 0,38" fill="#B83228"/>
+      <polygon points="0,36 50,64 100,36 100,56 50,84 0,56" fill="#D94040"/>
+      <polygon points="0,54 50,82 100,54 100,74 50,102 0,74" fill="#E87030"/>
     </svg>
   );
 }
 
-function Dog() {
+function PatternPinwheel() {
   return (
     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      {/* Floppy ears */}
-      <ellipse cx="20" cy="62" rx="14" ry="22" fill="#B83228" transform="rotate(-15 20 62)"/>
-      <ellipse cx="80" cy="62" rx="14" ry="22" fill="#B83228" transform="rotate(15 80 62)"/>
-      {/* Head */}
-      <circle cx="50" cy="56" r="34" fill="#E87030"/>
-      {/* Muzzle */}
-      <ellipse cx="50" cy="70" rx="18" ry="13" fill="#F5C090"/>
-      {/* Eyes */}
-      <circle cx="37" cy="49" r="7.5" fill="white"/>
-      <circle cx="63" cy="49" r="7.5" fill="white"/>
-      <circle cx="37" cy="50" r="5" fill="#2A0808"/>
-      <circle cx="63" cy="50" r="5" fill="#2A0808"/>
-      <circle cx="39" cy="48" r="1.8" fill="white"/>
-      <circle cx="65" cy="48" r="1.8" fill="white"/>
-      {/* Nose */}
-      <ellipse cx="50" cy="64" rx="6.5" ry="5" fill="#2A0808"/>
-      <ellipse cx="49" cy="63" rx="2" ry="1.5" fill="#6A2010" opacity="0.5"/>
-      <path d="M45,69 Q50,75 55,69" fill="none" stroke="#2A0808" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="50" y1="69" x2="50" y2="75" stroke="#2A0808" strokeWidth="1.5" strokeLinecap="round"/>
+      <rect width="100" height="100" fill="#FDE8D8"/>
+      <path d="M50,50 L50,0 Q100,0 100,50Z" fill="#D94040"/>
+      <path d="M50,50 L100,50 Q100,100 50,100Z" fill="#E87030"/>
+      <path d="M50,50 L50,100 Q0,100 0,50Z" fill="#D94040"/>
+      <path d="M50,50 L0,50 Q0,0 50,0Z" fill="#B83228"/>
+      <circle cx="50" cy="50" r="15" fill="white"/>
+      <circle cx="50" cy="50" r="7" fill="#D94040"/>
     </svg>
   );
 }
 
-function Penguin() {
+function PatternMosaic() {
   return (
     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      {/* Body */}
-      <ellipse cx="50" cy="58" rx="34" ry="38" fill="#B83228"/>
-      {/* Belly */}
-      <ellipse cx="50" cy="62" rx="22" ry="28" fill="#FDE8D8"/>
-      {/* Eyes */}
-      <circle cx="37" cy="46" r="8.5" fill="white"/>
-      <circle cx="63" cy="46" r="8.5" fill="white"/>
-      <circle cx="38" cy="47" r="5.5" fill="#2A0808"/>
-      <circle cx="64" cy="47" r="5.5" fill="#2A0808"/>
-      <circle cx="40" cy="45" r="2" fill="white"/>
-      <circle cx="66" cy="45" r="2" fill="white"/>
-      {/* Beak */}
-      <polygon points="50,58 44,64 56,64" fill="#E87030"/>
-      {/* Cheek blush */}
-      <ellipse cx="31" cy="58" rx="7" ry="5" fill="#E05848" opacity="0.4"/>
-      <ellipse cx="69" cy="58" rx="7" ry="5" fill="#E05848" opacity="0.4"/>
+      <rect width="34" height="34" fill="#D94040"/>
+      <rect x="33" width="34" height="34" fill="#E87030"/>
+      <rect x="66" width="34" height="34" fill="#B83228"/>
+      <rect y="33" width="34" height="34" fill="#E05848"/>
+      <rect x="33" y="33" width="34" height="34" fill="#FDE0D8"/>
+      <rect x="66" y="33" width="34" height="34" fill="#D94040"/>
+      <rect y="66" width="34" height="34" fill="#B83228"/>
+      <rect x="33" y="66" width="34" height="34" fill="#D94040"/>
+      <rect x="66" y="66" width="34" height="34" fill="#E87030"/>
     </svg>
   );
 }
 
-function Lion() {
+function PatternConcentric() {
   return (
     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      {/* Mane */}
-      <circle cx="50" cy="54" r="42" fill="#B83228"/>
-      {/* Ears */}
-      <circle cx="23" cy="30" r="10" fill="#D94040"/>
-      <circle cx="77" cy="30" r="10" fill="#D94040"/>
-      <circle cx="23" cy="30" r="6" fill="#F0A060"/>
-      <circle cx="77" cy="30" r="6" fill="#F0A060"/>
-      {/* Face */}
-      <circle cx="50" cy="56" r="29" fill="#E87030"/>
-      {/* Muzzle */}
-      <ellipse cx="50" cy="68" rx="16" ry="11" fill="#F5C090"/>
-      {/* Eyes */}
-      <circle cx="39" cy="51" r="7" fill="#FDE8D8"/>
-      <circle cx="61" cy="51" r="7" fill="#FDE8D8"/>
-      <circle cx="39" cy="51" r="4.5" fill="#2A0808"/>
-      <circle cx="61" cy="51" r="4.5" fill="#2A0808"/>
-      <circle cx="41" cy="49" r="1.7" fill="white"/>
-      <circle cx="63" cy="49" r="1.7" fill="white"/>
-      {/* Nose */}
-      <ellipse cx="50" cy="63" rx="4.5" ry="3.5" fill="#2A0808"/>
-      <path d="M46,67 Q50,71 54,67" fill="none" stroke="#2A0808" strokeWidth="1.5" strokeLinecap="round"/>
-      {/* Whisker dots */}
-      <circle cx="33" cy="66" r="1.3" fill="#D94040"/>
-      <circle cx="38" cy="68" r="1.3" fill="#D94040"/>
-      <circle cx="67" cy="66" r="1.3" fill="#D94040"/>
-      <circle cx="62" cy="68" r="1.3" fill="#D94040"/>
+      <circle cx="50" cy="50" r="50" fill="#D94040"/>
+      <circle cx="50" cy="50" r="40" fill="#FDE0D8"/>
+      <circle cx="50" cy="50" r="30" fill="#B83228"/>
+      <circle cx="50" cy="50" r="20" fill="#FDE0D8"/>
+      <circle cx="50" cy="50" r="10" fill="#E87030"/>
     </svg>
   );
 }
 
-function Panda() {
+function PatternCross() {
   return (
     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      {/* Ears */}
-      <circle cx="24" cy="27" r="17" fill="#B83228"/>
-      <circle cx="76" cy="27" r="17" fill="#B83228"/>
-      {/* Head */}
-      <circle cx="50" cy="58" r="36" fill="#FDE8D8"/>
-      {/* Eye patches */}
-      <ellipse cx="36" cy="52" rx="13" ry="12" fill="#D94040" transform="rotate(-15 36 52)"/>
-      <ellipse cx="64" cy="52" rx="13" ry="12" fill="#D94040" transform="rotate(15 64 52)"/>
-      {/* Eyes */}
-      <circle cx="36" cy="52" r="6.5" fill="white"/>
-      <circle cx="64" cy="52" r="6.5" fill="white"/>
-      <circle cx="36" cy="53" r="4.5" fill="#2A0808"/>
-      <circle cx="64" cy="53" r="4.5" fill="#2A0808"/>
-      <circle cx="38" cy="51" r="1.7" fill="white"/>
-      <circle cx="66" cy="51" r="1.7" fill="white"/>
-      {/* Muzzle */}
-      <ellipse cx="50" cy="70" rx="14" ry="10" fill="#FAD8C0"/>
-      {/* Nose */}
-      <ellipse cx="50" cy="65" rx="4.5" ry="3.5" fill="#B83228"/>
-      <path d="M46,69 Q50,74 54,69" fill="none" stroke="#B83228" strokeWidth="1.5" strokeLinecap="round"/>
+      <rect width="100" height="100" fill="#E87030"/>
+      <rect width="38" height="38" fill="#B83228"/>
+      <rect x="62" width="38" height="38" fill="#B83228"/>
+      <rect y="62" width="38" height="38" fill="#B83228"/>
+      <rect x="62" y="62" width="38" height="38" fill="#B83228"/>
+      <rect x="30" width="40" height="100" fill="#FDE8D8"/>
+      <rect y="30" width="100" height="40" fill="#FDE8D8"/>
+      <circle cx="50" cy="50" r="13" fill="#D94040"/>
     </svg>
   );
 }
 
-function Owl() {
+function PatternWaves() {
   return (
     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      {/* Ear tufts */}
-      <polygon points="30,38 23,14 40,34" fill="#B83228"/>
-      <polygon points="70,38 77,14 60,34" fill="#B83228"/>
-      {/* Body */}
-      <ellipse cx="50" cy="60" rx="35" ry="37" fill="#D94040"/>
-      {/* Face disc */}
-      <ellipse cx="50" cy="60" rx="27" ry="29" fill="#E87030"/>
-      {/* Big eyes */}
-      <circle cx="37" cy="53" r="13" fill="#FDE8D8"/>
-      <circle cx="63" cy="53" r="13" fill="#FDE8D8"/>
-      <circle cx="37" cy="53" r="10" fill="#F5C090"/>
-      <circle cx="63" cy="53" r="10" fill="#F5C090"/>
-      <circle cx="37" cy="53" r="6.5" fill="#2A0808"/>
-      <circle cx="63" cy="53" r="6.5" fill="#2A0808"/>
-      <circle cx="40" cy="50" r="2.5" fill="white"/>
-      <circle cx="66" cy="50" r="2.5" fill="white"/>
-      {/* Beak */}
-      <polygon points="50,59 45,66 55,66" fill="#E87030"/>
+      <rect width="100" height="100" fill="#D94040"/>
+      <path d="M-5,18 Q20,5 45,18 Q70,31 95,18 Q120,5 125,18 L125,38 Q100,51 75,38 Q50,25 25,38 Q0,51 -25,38Z" fill="#B83228"/>
+      <path d="M-5,52 Q20,39 45,52 Q70,65 95,52 Q120,39 125,52 L125,72 Q100,85 75,72 Q50,59 25,72 Q0,85 -25,72Z" fill="#E87030"/>
+      <path d="M-5,86 Q20,73 45,86 Q70,99 95,86 Q120,73 125,86 L125,106 Q100,119 75,106 Q50,93 25,106 Q0,119 -25,106Z" fill="#B83228"/>
     </svg>
   );
 }
 
-function Deer() {
+function PatternTriangles() {
   return (
     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      {/* Antlers */}
-      <path d="M34,38 Q24,22 18,10 M24,22 Q32,18 30,28 M18,10 Q26,16 28,10" fill="none" stroke="#B83228" strokeWidth="3.5" strokeLinecap="round"/>
-      <path d="M66,38 Q76,22 82,10 M76,22 Q68,18 70,28 M82,10 Q74,16 72,10" fill="none" stroke="#B83228" strokeWidth="3.5" strokeLinecap="round"/>
-      {/* Ears */}
-      <ellipse cx="23" cy="47" rx="12" ry="9" fill="#D94040" transform="rotate(-25 23 47)"/>
-      <ellipse cx="77" cy="47" rx="12" ry="9" fill="#D94040" transform="rotate(25 77 47)"/>
-      <ellipse cx="23" cy="47" rx="7" ry="5" fill="#FAD8C0" transform="rotate(-25 23 47)"/>
-      <ellipse cx="77" cy="47" rx="7" ry="5" fill="#FAD8C0" transform="rotate(25 77 47)"/>
-      {/* Head */}
-      <ellipse cx="50" cy="62" rx="28" ry="31" fill="#E87030"/>
-      {/* Muzzle */}
-      <ellipse cx="50" cy="74" rx="15" ry="11" fill="#F5C090"/>
-      {/* Eyes */}
-      <circle cx="38" cy="56" r="7.5" fill="white"/>
-      <circle cx="62" cy="56" r="7.5" fill="white"/>
-      <circle cx="38" cy="57" r="5" fill="#2A0808"/>
-      <circle cx="62" cy="57" r="5" fill="#2A0808"/>
-      <circle cx="40" cy="55" r="1.8" fill="white"/>
-      <circle cx="64" cy="55" r="1.8" fill="white"/>
-      {/* Nose */}
-      <ellipse cx="50" cy="70" rx="4" ry="3" fill="#B83228"/>
-      <path d="M47,73 Q50,77 53,73" fill="none" stroke="#B83228" strokeWidth="1.3" strokeLinecap="round"/>
+      <rect width="100" height="100" fill="#FDE8D8"/>
+      <polygon points="0,50 25,0 50,50" fill="#D94040"/>
+      <polygon points="50,50 75,0 100,50" fill="#B83228"/>
+      <polygon points="25,0 50,50 75,0" fill="#E87030"/>
+      <polygon points="0,100 25,50 50,100" fill="#E87030"/>
+      <polygon points="50,100 75,50 100,100" fill="#D94040"/>
+      <polygon points="25,50 50,100 75,50" fill="#B83228"/>
     </svg>
   );
 }
 
-// ─── Animal registry ──────────────────────────────────────────────────────────
+// ─── Pattern registry ─────────────────────────────────────────────────────────
 
-const ANIMALS: { component: () => React.ReactElement; bg: string }[] = [
-  { component: Fox,     bg: "#FDE0D8" },
-  { component: Bear,    bg: "#FDDAD5" },
-  { component: Bunny,   bg: "#FDE8E0" },
-  { component: Cat,     bg: "#FDD8D0" },
-  { component: Dog,     bg: "#FDE4D8" },
-  { component: Penguin, bg: "#FDDAD5" },
-  { component: Lion,    bg: "#FDE0D5" },
-  { component: Panda,   bg: "#FDE8E4" },
-  { component: Owl,     bg: "#FDD8CC" },
-  { component: Deer,    bg: "#FDE4DC" },
+const PATTERNS: { component: () => React.ReactElement; bg: string }[] = [
+  { component: PatternDiamonds,   bg: "#FDE0D8" },
+  { component: PatternStripes,    bg: "#D94040" },
+  { component: PatternScales,     bg: "#FDE8D8" },
+  { component: PatternChevron,    bg: "#FDE0D8" },
+  { component: PatternPinwheel,   bg: "#FDE8D8" },
+  { component: PatternMosaic,     bg: "#E87030" },
+  { component: PatternConcentric, bg: "#D94040" },
+  { component: PatternCross,      bg: "#E87030" },
+  { component: PatternWaves,      bg: "#D94040" },
+  { component: PatternTriangles,  bg: "#FDE8D8" },
 ];
 
 // ─── Avatar component ─────────────────────────────────────────────────────────
@@ -325,7 +168,7 @@ interface AvatarProps {
 }
 
 export function Avatar({ uid, size = 36, className = "" }: AvatarProps) {
-  const { component: AnimalSVG, bg } = ANIMALS[hashUid(uid) % ANIMALS.length];
+  const { component: PatternSVG, bg } = PATTERNS[hashUid(uid) % PATTERNS.length];
 
   return (
     <span
@@ -339,8 +182,8 @@ export function Avatar({ uid, size = 36, className = "" }: AvatarProps) {
       }}
       aria-hidden="true"
     >
-      <span style={{ width: size * 0.88, height: size * 0.88, display: "flex" }}>
-        <AnimalSVG />
+      <span style={{ width: size, height: size, display: "flex" }}>
+        <PatternSVG />
       </span>
     </span>
   );
