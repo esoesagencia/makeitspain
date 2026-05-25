@@ -17,6 +17,7 @@ interface MembersModalProps {
 interface MemberInfo {
   uid: string;
   displayName: string;
+  photoUrl?: string | null;
 }
 
 export function MembersModal({ memberIds, organizerUserId, anchorRect, onClose }: MembersModalProps) {
@@ -50,12 +51,13 @@ export function MembersModal({ memberIds, organizerUserId, anchorRect, onClose }
           memberIds.map(async (uid) => {
             try {
               const snap = await getDoc(doc(db, COLLECTIONS.USERS, uid));
-              const name = snap.exists()
-                ? ((snap.data() as UserDocument).displayName ?? "Member")
-                : "Member";
-              return { uid, displayName: name };
+              if (snap.exists()) {
+                const data = snap.data() as UserDocument;
+                return { uid, displayName: data.displayName ?? "Member", photoUrl: data.photoUrl ?? null };
+              }
+              return { uid, displayName: "Member", photoUrl: null };
             } catch {
-              return { uid, displayName: "Member" };
+              return { uid, displayName: "Member", photoUrl: null };
             }
           }),
         );
@@ -156,7 +158,7 @@ export function MembersModal({ memberIds, organizerUserId, anchorRect, onClose }
               const isOrganizer = m.uid === organizerUserId;
               return (
                 <li key={m.uid} className="flex items-center gap-2.5">
-                  <Avatar uid={m.uid} displayName={m.displayName} size={32} />
+                  <Avatar uid={m.uid} displayName={m.displayName} photoUrl={m.photoUrl} size={32} />
                   <span className="flex-1 text-sm font-medium text-[#1E0E0B] truncate leading-none">
                     {m.displayName}
                   </span>

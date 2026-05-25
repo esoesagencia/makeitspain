@@ -86,20 +86,24 @@ function MemberRow({
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [editingPhone, setEditingPhone] = useState(false);
   const [phoneValue, setPhoneValue] = useState(member.phone ?? "");
   const [savingPhone, setSavingPhone] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadError(null);
     try {
       const url = await uploadMemberAvatar(member.uid, file);
       await updateDoc(doc(db!, COLLECTIONS.USERS, member.uid), { photoUrl: url });
       onUpdate(member.uid, { photoUrl: url });
     } catch (err) {
       console.error("Avatar upload failed", err);
+      setUploadError("Upload failed — check storage permissions");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -108,12 +112,14 @@ function MemberRow({
 
   async function handlePhoneSave() {
     setSavingPhone(true);
+    setPhoneError(null);
     try {
       await updateDoc(doc(db!, COLLECTIONS.USERS, member.uid), { phone: phoneValue.trim() || null });
       onUpdate(member.uid, { phone: phoneValue.trim() || null });
       setEditingPhone(false);
     } catch (err) {
       console.error("Phone save failed", err);
+      setPhoneError("Save failed");
     } finally {
       setSavingPhone(false);
     }
@@ -149,6 +155,9 @@ function MemberRow({
           )}
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+        {uploadError && (
+          <p className="absolute -bottom-5 left-0 text-[9px] text-red-500 whitespace-nowrap">{uploadError}</p>
+        )}
       </div>
 
       {/* Info */}
@@ -178,7 +187,7 @@ function MemberRow({
               {savingPhone ? "…" : "Save"}
             </button>
             <button
-              onClick={() => { setPhoneValue(member.phone ?? ""); setEditingPhone(false); }}
+              onClick={() => { setPhoneValue(member.phone ?? ""); setEditingPhone(false); setPhoneError(null); }}
               className="text-xs px-2 py-1 rounded-lg font-semibold transition-opacity hover:opacity-70"
               style={{ color: "#9A7A78" }}
             >
@@ -198,6 +207,7 @@ function MemberRow({
             </span>
           </button>
         )}
+        {phoneError && <p className="text-[10px] text-red-500 mt-0.5">{phoneError}</p>}
       </div>
 
       {/* Role badge */}

@@ -19,6 +19,7 @@ const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], display: "swap" });
 interface MemberInfo {
   uid: string;
   displayName: string;
+  photoUrl?: string | null;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -62,12 +63,13 @@ export default function GroupPage() {
       ids.map(async (id) => {
         try {
           const snap = await getDoc(doc(db, COLLECTIONS.USERS, id));
-          const name = snap.exists()
-            ? ((snap.data() as UserDocument).displayName ?? "Traveller")
-            : "Traveller";
-          return { uid: id, displayName: name };
+          if (snap.exists()) {
+            const data = snap.data() as UserDocument;
+            return { uid: id, displayName: data.displayName ?? "Traveller", photoUrl: data.photoUrl ?? null };
+          }
+          return { uid: id, displayName: "Traveller", photoUrl: null };
         } catch {
-          return { uid: id, displayName: "Traveller" };
+          return { uid: id, displayName: "Traveller", photoUrl: null };
         }
       })
     ).then((results) => {
@@ -234,7 +236,7 @@ function MemberRow({ member, isMe, isOrganizer, last }: {
   return (
     <div className="flex items-center gap-3.5 px-4 py-3.5"
       style={last ? {} : { borderBottom: "1px solid rgba(217,64,64,0.07)" }}>
-      <Avatar uid={member.uid} displayName={member.displayName} size={40} />
+      <Avatar uid={member.uid} displayName={member.displayName} photoUrl={member.photoUrl} size={40} />
       <span className="flex-1 text-sm font-medium leading-none" style={{ color: "#1E0E0B" }}>
         {member.displayName}
         {isMe && (
