@@ -56,23 +56,15 @@ export function Avatar({ uid, displayName, size = 36, className = "" }: AvatarPr
           style={{ width: "100%", height: "100%" }}
         >
           <defs>
-            {/*
-              Classic flamenco "lunares" half-drop repeat.
-              Tile 44 × 38 holds 3 equal dots (r=8) arranged in a
-              staggered brick pattern — 2 on the top row, 1 centred on
-              the bottom row.  Every dot is ≥ 6 units clear of its
-              nearest neighbour, including across tile boundaries.
-            */}
+            {/* Even square-grid polka dot — one dot centred per 24×24 tile */}
             <pattern
               id={dotsFill}
               x="0" y="0"
-              width="44" height="38"
+              width="24" height="24"
               patternUnits="userSpaceOnUse"
             >
-              <rect width="44" height="38" fill="#D94040"/>
-              <circle cx="11" cy="10" r="8" fill="#0A0000"/>
-              <circle cx="33" cy="10" r="8" fill="#0A0000"/>
-              <circle cx="22" cy="29" r="8" fill="#0A0000"/>
+              <rect width="24" height="24" fill="#D94040"/>
+              <circle cx="12" cy="12" r="8" fill="#0A0000"/>
             </pattern>
           </defs>
 
