@@ -1729,15 +1729,15 @@ export default function AdminTripPage() {
               <AField label="Trip Type">
                 <ASelect value={editForm.tripType} onChange={setField("tripType")}>
                   <option value="">— select type —</option>
-                  <option value="bachelor_hen">Bachelor / Hen</option>
-                  <option value="bachelorette_stag">Bachelorette / Stag Do</option>
-                  <option value="romantic">Romantic</option>
-                  <option value="honeymoon">Honeymoon</option>
-                  <option value="birthday">Birthday</option>
-                  <option value="business">Business</option>
-                  <option value="special_event">Special Event</option>
-                  <option value="party_trip">Party Trip</option>
-                  <option value="other">Other</option>
+                  <option value="bachelor_hen">🪄 Bachelor / Hen</option>
+                  <option value="bachelorette_stag">🎉 Bachelorette / Stag Do</option>
+                  <option value="romantic">❤️ Romantic</option>
+                  <option value="honeymoon">🥂 Honeymoon</option>
+                  <option value="birthday">🎂 Birthday</option>
+                  <option value="business">💼 Business</option>
+                  <option value="special_event">⭐ Special Event</option>
+                  <option value="party_trip">🎊 Party Trip</option>
+                  <option value="other">✨ Other</option>
                 </ASelect>
               </AField>
             </div>
