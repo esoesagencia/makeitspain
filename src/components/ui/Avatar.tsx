@@ -43,9 +43,9 @@ export function Avatar({ uid, displayName, size = 36, className = "" }: AvatarPr
       style={{
         width: size,
         height: size,
-        background: "#4A0808",
-        boxShadow: "0 1px 8px rgba(0,0,0,0.45)",
-        border: "1.5px solid rgba(255,255,255,0.07)",
+        background: "#D94040",
+        boxShadow: "0 1px 8px rgba(0,0,0,0.35)",
+        border: "1.5px solid rgba(0,0,0,0.15)",
       }}
       aria-hidden="true"
     >
@@ -68,14 +68,14 @@ export function Avatar({ uid, displayName, size = 36, className = "" }: AvatarPr
             </pattern>
           </defs>
 
-          {/* Dark red background */}
-          <rect width="100" height="100" fill="#4A0808"/>
+          {/* Polka-dot background */}
+          <rect width="100" height="100" fill={`url(#${dotsFill})`}/>
 
           {/* Subtle inner shadow ring for depth */}
           <circle
             cx="50" cy="50" r="49"
             fill="none"
-            stroke="rgba(0,0,0,0.25)"
+            stroke="rgba(0,0,0,0.2)"
             strokeWidth="6"
           />
 
@@ -86,17 +86,17 @@ export function Avatar({ uid, displayName, size = 36, className = "" }: AvatarPr
             fontFamily="'Playfair Display', Georgia, 'Times New Roman', serif"
             fontWeight="700"
             fontSize={fontSize}
-            fill="rgba(0,0,0,0.45)"
+            fill="rgba(0,0,0,0.35)"
           >{initials}</text>
 
-          {/* Polka-dot initials */}
+          {/* Yellow-orange initials */}
           <text
             x="50" y={textY}
             textAnchor="middle"
             fontFamily="'Playfair Display', Georgia, 'Times New Roman', serif"
             fontWeight="700"
             fontSize={fontSize}
-            fill={`url(#${dotsFill})`}
+            fill="#F5A623"
           >{initials}</text>
         </svg>
       </span>
