@@ -222,6 +222,7 @@ export default function TripsPage() {
   const router = useRouter();
   const [uid, setUid] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string>("");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [pageState, setPageState] = useState<PageState>("loading-auth");
   const [trips, setTrips] = useState<Trip[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -235,6 +236,7 @@ export default function TripsPage() {
         if (snap.exists()) {
           const data = snap.data() as UserDocument;
           setDisplayName(data.displayName ?? user.displayName ?? "");
+          setPhotoUrl(data.photoUrl ?? null);
         } else {
           setDisplayName(user.displayName ?? "");
         }
@@ -306,7 +308,7 @@ export default function TripsPage() {
               {firstName && uid && (
                 <div className="mb-6 animate-fade-in">
                   <div className="flex items-center gap-3 mb-1">
-                    <Avatar uid={uid} displayName={displayName} size={44} />
+                    <Avatar uid={uid} displayName={displayName} photoUrl={photoUrl} size={44} />
                     <h2 className="font-display text-3xl lg:text-4xl font-light text-[#1E0E0B]">
                       Hi, <span className="text-[#D94040] font-semibold">{firstName}</span>{" "}
                       {/* eslint-disable-next-line @next/next/no-img-element */}
