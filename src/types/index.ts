@@ -10,6 +10,7 @@ export interface UserDocument {
   displayName: string;
   role: UserRole;
   photoUrl: string | null;
+  phone?: string | null;
   tripIds: string[];
   fcmToken: string | null;
   createdAt: Timestamp;

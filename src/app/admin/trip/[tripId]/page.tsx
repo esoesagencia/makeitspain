@@ -21,6 +21,7 @@ import { ActivityForm } from "@/components/admin/ActivityForm";
 import { AccommodationSection } from "@/components/admin/AccommodationSection";
 import { TripCalendarView, type CalTransferInfo } from "@/components/admin/TripCalendarView";
 import { NotificationComposer } from "@/components/admin/NotificationComposer";
+import { TripMembersSection } from "@/components/admin/TripMembersSection";
 import { TripAIAssistant } from "@/components/admin/TripAIAssistant";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -1156,10 +1157,19 @@ export default function AdminTripPage() {
     const current = transfersRef.current;
     const newTransfers = new Map<string, TransferInfo>();
 
-    activities.forEach((act, i) => {
+    const sortedActivities = [...activities].sort((a, b) => {
+      const da = a.startTime.toDate().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+      const db2 = b.startTime.toDate().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+      return da !== db2 ? da.localeCompare(db2) : a.sortOrder - b.sortOrder;
+    });
+
+    console.log("[transfers] sorted pairs:", sortedActivities.map(a => `${a.category}(${a.id.slice(-4)},SO=${a.sortOrder})`));
+
+    sortedActivities.forEach((act, i) => {
       if (i === 0) return;
-      const prev = activities[i - 1];
+      const prev = sortedActivities[i - 1];
       const key = `${prev.id}->${act.id}`;
+      console.log(`[transfers] pair: ${prev.category}(${prev.id.slice(-4)}) -> ${act.category}(${act.id.slice(-4)}) | key=${key}`);
 
       const gapMs = act.startTime.toMillis() - prev.endTime.toMillis();
       const gapMinutes = Math.max(0, Math.round(gapMs / 60_000));
@@ -2083,6 +2093,9 @@ export default function AdminTripPage() {
                     const prev = idx > 0 ? ordered[idx - 1] : null;
                     const transferKey = prev ? `${prev.id}->${activity.id}` : null;
                     const transferInfo = transferKey ? transfers.get(transferKey) : null;
+                    if (prev?.category === "hotel" && activity.category !== "hotel" && activity.category !== "sleep_in_hotel") {
+                      console.log(`[render] hotel->act key=${transferKey} found=${!!transferInfo} transfers.size=${transfers.size}`);
+                    }
 
                     // ── Out-of-order detection ───────────────────────────────
                     // Red card if this activity starts before the one above it
@@ -2193,6 +2206,9 @@ export default function AdminTripPage() {
           initialDressCode={trip.additionalInfoDressCode ?? ""}
           initialUsefulTips={trip.additionalInfoUsefulTips ?? ""}
         />
+
+        {/* ── Trip Members ── */}
+        <TripMembersSection memberIds={trip.memberIds} />
       </main>
 
       {activityFormOpen && (
