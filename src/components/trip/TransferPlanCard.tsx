@@ -537,7 +537,7 @@ export function TransferPlanCard({ from, to, nowMs }: TransferPlanCardProps) {
               src={mapSrc}
               width="100%"
               height="160"
-              style={{ border: 0, display: "block" }}
+              style={{ border: 0, display: "block", pointerEvents: "none" }}
               allowFullScreen={false}
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
