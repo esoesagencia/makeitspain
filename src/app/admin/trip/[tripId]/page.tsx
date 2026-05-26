@@ -1701,7 +1701,7 @@ export default function AdminTripPage() {
           <span
             className="shrink-0 text-[10px] font-semibold px-2.5 py-1 rounded-full"
             style={editForm?.isPaid
-              ? { background: "rgba(46,204,113,0.2)", color: "#2ECC71", border: "1px solid rgba(46,204,113,0.35)" }
+              ? { background: "#DCFCE7", color: "#16A34A", border: "1px solid #86EFAC" }
               : { background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.2)" }}
           >
             {editForm?.isPaid ? "✓ Paid" : "Unpaid"}
