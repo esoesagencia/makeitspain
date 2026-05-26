@@ -46,6 +46,7 @@ interface TripEditState {
   petSitting: PetSittingEntry[];
   babysitter: BabysitterEntry[];
   specialCare: SpecialCareEntry[];
+  isPaid: boolean;
 }
 
 function tripToEdit(t: Trip): TripEditState {
@@ -62,6 +63,7 @@ function tripToEdit(t: Trip): TripEditState {
     petSitting: t.petSitting ?? [],
     babysitter: t.babysitter ?? [],
     specialCare: t.specialCare ?? [],
+    isPaid: t.isPaid ?? false,
   };
 }
 
@@ -1481,6 +1483,7 @@ export default function AdminTripPage() {
         petSitting:           editForm.petSitting,
         babysitter:           editForm.babysitter,
         specialCare:          editForm.specialCare,
+        isPaid:               editForm.isPaid,
         updatedAt:      serverTimestamp(),
       });
 
@@ -1693,6 +1696,14 @@ export default function AdminTripPage() {
             <p className="text-xs text-white/70">{trip.clientName}</p>
           </div>
           <Badge status={trip.status} forceWhiteBg />
+          <span
+            className="shrink-0 text-[10px] font-semibold px-2.5 py-1 rounded-full"
+            style={trip.isPaid
+              ? { background: "rgba(46,204,113,0.2)", color: "#2ECC71", border: "1px solid rgba(46,204,113,0.35)" }
+              : { background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.2)" }}
+          >
+            {trip.isPaid ? "✓ Paid" : "Unpaid"}
+          </span>
         </div>
       </header>
 
@@ -1740,6 +1751,43 @@ export default function AdminTripPage() {
                   <option value="other">✨ Other</option>
                 </ASelect>
               </AField>
+            </div>
+
+            {/* ── Payment status ── */}
+            <div className="flex items-center justify-between rounded-xl px-4 py-3"
+              style={{ background: editForm.isPaid ? "rgba(46,204,113,0.08)" : "rgba(217,64,64,0.06)", border: `1px solid ${editForm.isPaid ? "rgba(46,204,113,0.25)" : "rgba(217,64,64,0.18)"}`, transition: "all 0.2s" }}>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: editForm.isPaid ? "rgba(46,204,113,0.15)" : "rgba(217,64,64,0.1)" }}>
+                  {editForm.isPaid ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2ECC71" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D94040" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: editForm.isPaid ? "#1A7A48" : "#D94040" }}>
+                    {editForm.isPaid ? "Payment received" : "Payment pending"}
+                  </p>
+                  <p className="text-[11px]" style={{ color: editForm.isPaid ? "#2ECC71" : "#9A7A78" }}>
+                    {editForm.isPaid ? "Client has paid for this trip" : "Awaiting payment from client"}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditForm(f => f ? { ...f, isPaid: !f.isPaid } : f)}
+                className="relative shrink-0 w-11 h-6 rounded-full transition-colors duration-200"
+                style={{ background: editForm.isPaid ? "#2ECC71" : "rgba(180,100,90,0.25)" }}
+                aria-label={editForm.isPaid ? "Mark as unpaid" : "Mark as paid"}
+              >
+                <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200"
+                  style={{ transform: editForm.isPaid ? "translateX(20px)" : "translateX(0)" }} />
+              </button>
             </div>
 
             {/* ── Budget ── */}

@@ -62,6 +62,7 @@ export interface TripDocument {
   petSitting?: PetSittingEntry[];
   babysitter?: BabysitterEntry[];
   specialCare?: SpecialCareEntry[];
+  isPaid?: boolean;
 }
 
 export interface PetSittingEntry {
