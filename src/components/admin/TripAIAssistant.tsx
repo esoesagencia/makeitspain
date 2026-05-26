@@ -163,6 +163,7 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingDeletes, setPendingDeletes] = useState<{ msgId: string; ops: AIOperation[] } | null>(null);
   const [listening, setListening] = useState(false);
   const [canVoice, setCanVoice] = useState(false);
   const [interimText, setInterimText] = useState("");
@@ -370,6 +371,18 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
     onActivitiesChanged();
   }, [trip, activities, accommodations, onActivitiesChanged]);
 
+  // Confirm and apply pending delete operations
+  async function handleConfirmDeletes() {
+    if (!pendingDeletes) return;
+    const ops = pendingDeletes.ops;
+    setPendingDeletes(null);
+    try {
+      await applyOperations(ops);
+    } catch (err) {
+      console.error("Delete confirmation failed", err);
+    }
+  }
+
   // ── Direct plan execution (bypasses Gemini entirely) ────────────────────────
   function extractDirectPlan(text: string): AIOperation[] | null {
     const marker = text.indexOf("MAKEITSPAIN_PLAN:");
@@ -387,6 +400,7 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
   // ── Send message ─────────────────────────────────────────────────────────────
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
+    setPendingDeletes(null);
     setInput("");
     setInterimText("");
 
@@ -423,6 +437,7 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
 
     const history: AIMessage[] = [...messages, userMsg]
       .filter(m => !m.loading)
+      .slice(-10)
       .map(m => ({ role: m.role, content: m.content }));
 
     try {
@@ -463,12 +478,18 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
             type: a.type,
             nights: a.nights ?? [],
           })),
+          careServices: {
+            petSitting: trip.petSitting ?? [],
+            babysitter: trip.babysitter ?? [],
+            specialCare: trip.specialCare ?? [],
+          },
         }),
       });
 
       const data = await res.json();
+      const msgId = (Date.now() + 1).toString();
       const aiMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(),
+        id: msgId,
         role: "assistant",
         content: data.message,
         operations: data.operations,
@@ -477,7 +498,10 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
       setMessages(prev => prev.filter(m => m.id !== "loading").concat(aiMsg));
 
       if (data.operations?.length) {
-        await applyOperations(data.operations);
+        const safeOps = data.operations.filter((op: AIOperation) => op.type !== "delete" && op.type !== "delete_accommodation");
+        const riskyOps = data.operations.filter((op: AIOperation) => op.type === "delete" || op.type === "delete_accommodation");
+        if (safeOps.length) await applyOperations(safeOps);
+        if (riskyOps.length) setPendingDeletes({ msgId, ops: riskyOps });
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -642,14 +666,41 @@ export function TripAIAssistant({ trip, activities, accommodations, onActivities
                     <>
                       <p style={{ whiteSpace: "pre-wrap" }}>{msg.content}</p>
                       {msg.operations && msg.operations.length > 0 && (
-                        <div className="mt-2 pt-2 flex items-center gap-1.5" style={{ borderTop: "1px solid rgba(217,64,64,0.15)" }}>
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1A9E72" strokeWidth="2.5" strokeLinecap="round">
-                            <polyline points="20 6 9 17 4 12"/>
-                          </svg>
-                          <span className="text-[10px] font-semibold" style={{ color: "#1A9E72" }}>
-                            {opSummary(msg.operations)}
-                          </span>
-                        </div>
+                        <>
+                          {msg.operations.some(op => op.type !== "delete" && op.type !== "delete_accommodation") && (
+                            <div className="mt-2 pt-2 flex items-center gap-1.5" style={{ borderTop: "1px solid rgba(217,64,64,0.15)" }}>
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1A9E72" strokeWidth="2.5" strokeLinecap="round">
+                                <polyline points="20 6 9 17 4 12"/>
+                              </svg>
+                              <span className="text-[10px] font-semibold" style={{ color: "#1A9E72" }}>
+                                {opSummary(msg.operations.filter(op => op.type !== "delete" && op.type !== "delete_accommodation"))}
+                              </span>
+                            </div>
+                          )}
+                          {pendingDeletes?.msgId === msg.id && (
+                            <div className="mt-2 pt-2 flex flex-col gap-1.5" style={{ borderTop: "1px solid rgba(217,64,64,0.15)" }}>
+                              <p className="text-[10px] font-semibold" style={{ color: "#D94040" }}>
+                                {pendingDeletes.ops.length} deletion{pendingDeletes.ops.length > 1 ? "s" : ""} — confirm to apply
+                              </p>
+                              <div className="flex gap-1.5">
+                                <button
+                                  onClick={handleConfirmDeletes}
+                                  className="text-[10px] font-semibold px-2 py-1 rounded-lg text-white transition-opacity hover:opacity-80"
+                                  style={{ background: "#D94040" }}
+                                >
+                                  Confirm
+                                </button>
+                                <button
+                                  onClick={() => setPendingDeletes(null)}
+                                  className="text-[10px] font-semibold px-2 py-1 rounded-lg transition-opacity hover:opacity-70"
+                                  style={{ color: "#9A7A78", background: "rgba(154,122,120,0.1)" }}
+                                >
+                                  Skip
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </>
                       )}
                     </>
                   )}
