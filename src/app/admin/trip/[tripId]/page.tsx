@@ -1607,6 +1607,8 @@ export default function AdminTripPage() {
         );
       }
 
+      // Sync local trip state so header badge and other trip-derived UI reflect saved values immediately
+      setTrip(prev => prev ? { ...prev, isPaid: editForm.isPaid, status: editForm.status, tripType: editForm.tripType || undefined } : prev);
       setTripSaved(true);
       setTimeout(() => setTripSaved(false), 3000);
     } catch { setTripError("Failed to save."); }
@@ -1698,11 +1700,11 @@ export default function AdminTripPage() {
           <Badge status={trip.status} forceWhiteBg />
           <span
             className="shrink-0 text-[10px] font-semibold px-2.5 py-1 rounded-full"
-            style={trip.isPaid
+            style={editForm?.isPaid
               ? { background: "rgba(46,204,113,0.2)", color: "#2ECC71", border: "1px solid rgba(46,204,113,0.35)" }
               : { background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.2)" }}
           >
-            {trip.isPaid ? "✓ Paid" : "Unpaid"}
+            {editForm?.isPaid ? "✓ Paid" : "Unpaid"}
           </span>
         </div>
       </header>
