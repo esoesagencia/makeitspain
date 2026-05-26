@@ -2355,17 +2355,15 @@ export default function AdminTripPage() {
         <TripMembersSection memberIds={trip.memberIds} />
 
         {/* ── Admin Info ── */}
-        <section className="mt-10 mb-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#9A7A78" }}>
-            Admin Info
-          </p>
+        <section className="rounded-[12px] bg-white p-5" style={{ border: "1px solid rgba(180,100,90,0.15)", boxShadow: "0 2px 12px rgba(120,60,50,0.06)" }}>
+          <h2 className="font-display text-base font-semibold text-[#1E0E0B] mb-4">Admin Info</h2>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setPromptOpen(true)}
               className="flex items-center gap-2 px-3.5 py-2 rounded-[10px] text-sm font-medium transition-colors"
-              style={{ background: "rgba(217,64,64,0.07)", color: "#D94040", border: "1px solid rgba(217,64,64,0.18)" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(217,64,64,0.12)"; }}
+              style={{ background: "rgba(217,64,64,0.07)", color: "#D94040", border: "1px solid rgba(217,64,64,0.25)" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(217,64,64,0.14)"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(217,64,64,0.07)"; }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
