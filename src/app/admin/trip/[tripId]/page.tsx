@@ -1022,6 +1022,90 @@ function TransferCard({ info, onModeChange }: {
   );
 }
 
+// ─── AI Prompt constant ───────────────────────────────────────────────────────
+
+const DEFAULT_AI_PROMPT = `You are a luxury trip planner assistant for MakeItSpain, a premium Spain concierge company specialising in romantic trips, bachelor/hen parties, honeymoons, birthdays and special events.
+
+Your task: When I describe a trip in words, create a complete structured trip plan in MAKEITSPAIN PLAN format. This will be pasted into our admin AI assistant which will create all activity cards and fill in trip details automatically.
+
+━━━ OUTPUT FORMAT ━━━
+
+MAKEITSPAIN PLAN
+
+TRIP INFO:
+Name: [creative trip name]
+Client: [client first name or full name]
+Destination: [city, Spain]
+Start: YYYY-MM-DD
+End: YYYY-MM-DD
+People: [number]
+Type: bachelor_hen | bachelorette_stag | romantic | honeymoon | birthday | business | special_event | party_trip | other
+Budget: [from]–[to] EUR (per_trip | per_person)
+Requirements: [pet | toddler | kids | special_needs | elderly | lgbtq — comma-separated, or "none"]
+Personal Message: [warm personal welcome message to the client — 2-4 sentences]
+Climate Info: [weather expectations, what to wear]
+Dress Code: [dress code recommendations for the trip]
+Useful Tips: [practical tips — currency, language, customs, transport, etc.]
+
+[Only if pets mentioned:]
+PET SITTING:
+- Name: [service/hotel name]
+  Type: hotel | pet_sitter
+  Phone: [Spanish phone number]
+  Address: [full address]
+  Hours: [availability hours]
+  Cost: [approximate cost]
+  Link: [website URL]
+
+ACCOMMODATION:
+- Name: [hotel or property name]
+  Type: hotel | apartment_villa
+  Address: [full Spanish address]
+  Phone: [contact phone]
+
+--- DAY 1 (YYYY-MM-DD) ---
+
+[HH:MM] CATEGORY: [TITLE IN CAPS]
+Place: [venue/establishment name]
+Address: [full street address, city]
+Duration: [X] minutes
+Description: [engaging vivid description — 2-4 sentences]
+Recommendations: [specific tips: what to order, what to see, insider knowledge]
+Coordinator Note: [warm personal note — exciting, personal, luxury tone]
+Phone: [contact phone if applicable]
+Link: [website/booking URL if applicable]
+Booked: yes | no
+Transfer: [walking X min | taxi X min | transit X min]
+
+[Repeat for every activity in the day]
+
+--- DAY 2 (YYYY-MM-DD) ---
+[... and so on for all days]
+
+━━━ CATEGORY DEFINITIONS (CRITICAL — use exact values) ━━━
+
+• activity — sightseeing, tours, experiences, excursions, cultural visits, museum, flamenco show, bar, cocktails, nightclub, concert, party, nightlife, winery, cooking class, sports, check-in/check-out experience
+• transfer — ONLY inter-city travel: plane, train, private car, minivan between cities or airports. NEVER for local taxi rides between nearby venues in the same city
+• meal — any food or drink: breakfast, lunch, dinner, tapas, brunch, restaurant, café, winery meal, cooking class meal component
+• free_time — unstructured leisure: shopping, relaxing, wandering
+• surprise — hidden activity revealed later (use sparingly for special moments)
+• hotel — daytime hotel return: check-in to rooms, siesta, getting ready, changing clothes, freshening up. This is DIFFERENT from the overnight sleep card (auto-created by system)
+• wellness_grooming — spa, massage, beauty treatment, facial, grooming, hair, nails, sauna
+
+NEVER use "sleep_in_hotel" — it is auto-created by the system.
+
+━━━ RULES ━━━
+• Day 1 = Start date, Day 2 = Start+1, etc. Map days sequentially — never use or invent actual dates from the document
+• Never create activities outside the trip date range
+• Use real Spanish venues, real addresses, real phone numbers
+• All times in 24h format (HH:MM)
+• Include realistic transfer times between venues
+• Each day should feel complete: morning → afternoon → evening → night if applicable
+• Keep descriptions warm, luxury-toned, personal — never generic tourist brochure language
+• Budget above average → choose premium and exclusive venues. Budget standard → quality local spots
+• For birthday/celebration trips: include a signature celebration moment (cake, champagne, surprise table)
+• For senior/serious clients: skip touristy traps, favour understated excellence and privacy`;
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminTripPage() {
@@ -1055,6 +1139,16 @@ export default function AdminTripPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [calendarView, setCalendarView] = useState(false);
   const [accommodations, setAccommodations] = useState<Accommodation[]>([]);
+
+  // Prompt modal
+  const [promptOpen, setPromptOpen]     = useState(false);
+  const [promptText, setPromptText]     = useState(DEFAULT_AI_PROMPT);
+  const [promptCopied, setPromptCopied] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("makeitspain_ai_prompt");
+    if (saved) setPromptText(saved);
+  }, []);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -2259,7 +2353,47 @@ export default function AdminTripPage() {
 
         {/* ── Trip Members ── */}
         <TripMembersSection memberIds={trip.memberIds} />
+
+        {/* ── Admin Info ── */}
+        <section className="mt-10 mb-2">
+          <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#9A7A78" }}>
+            Admin Info
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setPromptOpen(true)}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-[10px] text-sm font-medium transition-colors"
+              style={{ background: "rgba(217,64,64,0.07)", color: "#D94040", border: "1px solid rgba(217,64,64,0.18)" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(217,64,64,0.12)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(217,64,64,0.07)"; }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              Prompt for IA
+            </button>
+          </div>
+        </section>
       </main>
+
+      {promptOpen && (
+        <TripPromptModal
+          text={promptText}
+          copied={promptCopied}
+          onChange={(v) => { setPromptText(v); localStorage.setItem("makeitspain_ai_prompt", v); }}
+          onCopy={() => {
+            navigator.clipboard.writeText(promptText).then(() => {
+              setPromptCopied(true);
+              setTimeout(() => setPromptCopied(false), 2000);
+            });
+          }}
+          onReset={() => { setPromptText(DEFAULT_AI_PROMPT); localStorage.setItem("makeitspain_ai_prompt", DEFAULT_AI_PROMPT); }}
+          onClose={() => setPromptOpen(false)}
+        />
+      )}
 
       {activityFormOpen && (
         <ActivityForm
@@ -3107,6 +3241,107 @@ function ReminderPopup({ activity, tripId, onClose }: {
             style={{ background: "#16A34A", color: "#fff", opacity: saving ? 0.7 : 1 }}
           >
             {saving ? "Saving…" : "Save Reminder"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Prompt Modal ─────────────────────────────────────────────────────────────
+
+function TripPromptModal({ text, copied, onChange, onCopy, onReset, onClose }: {
+  text: string;
+  copied: boolean;
+  onChange: (v: string) => void;
+  onCopy: () => void;
+  onReset: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(30,14,11,0.55)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl rounded-2xl bg-white flex flex-col"
+        style={{ border: "1px solid rgba(217,64,64,0.15)", boxShadow: "0 24px 70px rgba(120,60,50,0.22)", animation: "fadeUp 0.22s ease both", maxHeight: "90vh" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}`}</style>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid rgba(180,100,90,0.1)" }}>
+          <div className="flex items-center gap-2">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D94040" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span className="font-display text-sm font-semibold" style={{ color: "#1E0E0B" }}>Prompt for IA</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onReset}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              style={{ background: "rgba(180,100,90,0.07)", color: "#9A7A78" }}
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={onCopy}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+              style={{ background: copied ? "rgba(46,204,113,0.12)" : "rgba(217,64,64,0.08)", color: copied ? "#16A34A" : "#D94040" }}
+            >
+              {copied ? (
+                <>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <rect x="9" y="9" width="13" height="13" rx="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  Copy
+                </>
+              )}
+            </button>
+            <button onClick={onClose} style={{ color: "#9A7A78" }} aria-label="Close" className="p-1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Textarea */}
+        <div className="flex-1 overflow-hidden p-4">
+          <textarea
+            className="w-full resize-none outline-none rounded-xl p-3 text-[12px] leading-relaxed font-mono"
+            style={{ background: "rgba(245,237,237,0.4)", border: "1px solid rgba(180,100,90,0.15)", color: "#1E0E0B", minHeight: "420px", height: "100%" }}
+            value={text}
+            onChange={(e) => onChange(e.target.value)}
+            spellCheck={false}
+          />
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 pb-4 flex items-center justify-between">
+          <p className="text-[10px]" style={{ color: "#9A7A78" }}>Changes are saved automatically to this browser.</p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl text-xs font-semibold"
+            style={{ background: "#D94040", color: "#fff" }}
+          >
+            Done
           </button>
         </div>
       </div>
