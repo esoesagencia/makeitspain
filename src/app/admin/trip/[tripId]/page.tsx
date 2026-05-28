@@ -1707,7 +1707,18 @@ export default function AdminTripPage() {
       }
 
       // Sync local trip state so header badge and other trip-derived UI reflect saved values immediately
-      setTrip(prev => prev ? { ...prev, isPaid: editForm.isPaid, status: editForm.status, tripType: editForm.tripType || undefined } : prev);
+      setTrip(prev => prev ? {
+        ...prev,
+        tripName:       editForm.tripName.trim(),
+        clientName:     editForm.clientName.trim(),
+        destination:    editForm.destination.trim(),
+        startDate:      parseMadridDate(editForm.startDate),
+        endDate:        parseMadridDate(editForm.endDate),
+        numberOfPeople: parseInt(editForm.numberOfPeople, 10) || 2,
+        status:         editForm.status,
+        tripType:       editForm.tripType || undefined,
+        isPaid:         editForm.isPaid,
+      } : prev);
       setTripSaved(true);
       setTimeout(() => setTripSaved(false), 3000);
     } catch { setTripError("Failed to save."); }
