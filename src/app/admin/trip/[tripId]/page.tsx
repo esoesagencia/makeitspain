@@ -1180,6 +1180,7 @@ export default function AdminTripPage() {
       q,
       (snap) => {
         const next = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Activity));
+        console.log("[Activities] snapshot fired, count:", next.length, next.map(a => a.title));
         setActivities(next);
         // Only update the displayed list when the user isn't mid-drag — prevents
         // Firestore updates from causing the card list to jump during a drag.

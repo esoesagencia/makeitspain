@@ -264,8 +264,10 @@ export function ActivityForm({
 
       const colRef = collection(db, COLLECTIONS.TRIPS, tripId, SUBCOLLECTIONS.ACTIVITIES);
 
+      console.log("[ActivityForm] submitting, date:", form.date, "startTime:", toHHMM(form.startHour, form.startMinute), "tripRange:", tripStartDate, "→", tripEndDate);
       if (isEdit && activity) {
         await updateDoc(doc(colRef, activity.id), payload);
+        console.log("[ActivityForm] updateDoc success, id:", activity.id);
       } else {
         // Compute a sortOrder that places the new activity in chronological position
         // WITHOUT shifting any existing activity. We use a fractional value that slots
@@ -289,7 +291,7 @@ export function ActivityForm({
           // insertIdx === -1 means all existing activities start before the new one → append
         }
 
-        await addDoc(colRef, {
+        const ref = await addDoc(colRef, {
           ...payload,
           sortOrder:        insertOrder,
           isVisited:        false,
@@ -297,6 +299,7 @@ export function ActivityForm({
           transferMode:     "taxi",
           transferDuration: null,
         });
+        console.log("[ActivityForm] addDoc success, id:", ref.id, "date:", form.date);
       }
       onSaved();
     } catch (err) {
