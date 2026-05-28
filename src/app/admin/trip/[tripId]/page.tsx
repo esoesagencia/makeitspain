@@ -1231,9 +1231,14 @@ export default function AdminTripPage() {
     const endStr   = tsToDateInput(trip.endDate);
     const toMadridKey = (ts: { toDate(): Date }) =>
       ts.toDate().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+    console.log(`[auto-prune] trip range: ${startStr} → ${endStr}, checking ${activities.length} activities`);
     const outside = activities.filter((a) => {
       const key = toMadridKey(a.startTime);
-      return key < startStr || key > endStr;
+      const isOutside = key < startStr || key > endStr;
+      if (isOutside) {
+        console.warn(`[auto-prune] DELETING "${a.title}" id=${a.id} — date key="${key}", allowed=[${startStr}→${endStr}], raw startTime UTC="${a.startTime.toDate().toISOString()}"`);
+      }
+      return isOutside;
     });
     if (outside.length === 0) return;
     const actColRef = collection(db, COLLECTIONS.TRIPS, tripId, SUBCOLLECTIONS.ACTIVITIES);
@@ -2100,10 +2105,6 @@ export default function AdminTripPage() {
                   <span>Calendar</span>
                 </button>
               </div>
-              {/* Global add button — only when no activities yet */}
-              {activities.length === 0 && (
-                <Button variant="gold" size="md" onClick={() => openAdd(tripStartDate)}>+ Add Activity</Button>
-              )}
             </div>
           </div>
 
@@ -2142,9 +2143,7 @@ export default function AdminTripPage() {
           )}
 
           {/* ── List view ── */}
-          {!calendarView && activities.length === 0 ? (
-            <p className="text-sm text-[#9A7A78] text-center py-8">No activities yet — add the first one above.</p>
-          ) : !calendarView ? (
+          {!calendarView && (
             <DndContext
               sensors={sensors}
               collisionDetection={closestCorners}
@@ -2161,8 +2160,6 @@ export default function AdminTripPage() {
             >
               <SortableContext items={displayActivities.map((a) => a.id)} strategy={verticalListSortingStrategy}>
                 {(() => {
-                  // Sort by date first, then sortOrder within each date — guarantees
-                  // same-day activities are always consecutive so day headers are unique.
                   const SPAIN = "Europe/Madrid";
                   const toKey = (a: Activity) =>
                     a.startTime.toDate().toLocaleDateString("sv-SE", { timeZone: SPAIN });
@@ -2171,140 +2168,168 @@ export default function AdminTripPage() {
                     return dk !== 0 ? dk : a.sortOrder - b.sortOrder;
                   });
 
-                  // ── Per-day helpers ──────────────────────────────────────────────────────
+                  // ── Per-day helpers ──────────────────────────────────────────────────
                   const toMins = (ts: { toDate(): Date }) => {
                     const d = ts.toDate();
                     const hRaw = d.toLocaleString("en-GB", { hour: "numeric", hour12: false, timeZone: SPAIN });
                     const mRaw = d.toLocaleString("en-GB", { minute: "numeric", timeZone: SPAIN });
                     return (hRaw === "24" ? 0 : Number(hRaw)) * 60 + Number(mRaw);
                   };
-                  // Activities before 04:00 are treated as past-midnight (add 24 h) so
-                  // they map correctly onto the 04:00 → 02:00 fixed timeline ruler.
                   const adjMins = (ts: { toDate(): Date }) => {
                     const raw = toMins(ts);
                     return raw < 4 * 60 ? raw + 1440 : raw;
                   };
-                  // Earliest adjusted activity time per day — initial position for the bar
-                  const dayFirstMinsMap = new Map<string, number>();
+
+                  // Build byDay map: dateKey → sorted activities for that day
+                  const byDay = new Map<string, Activity[]>();
                   ordered.forEach((a) => {
-                    if (a.category === "hotel" && a.estimatedDuration === 0) return;
                     const dk = toKey(a);
-                    const am = adjMins(a.startTime);
-                    if (!dayFirstMinsMap.has(dk) || am < dayFirstMinsMap.get(dk)!) {
-                      dayFirstMinsMap.set(dk, am);
-                    }
+                    if (!byDay.has(dk)) byDay.set(dk, []);
+                    byDay.get(dk)!.push(a);
                   });
 
+                  // Index map so we can look up a cross-day prev activity for transfer/OOO
+                  const orderedIdxMap = new Map<string, number>();
+                  ordered.forEach((a, i) => orderedIdxMap.set(a.id, i));
+
+                  // Generate every calendar day the trip spans
+                  const tripDaysList: string[] = [];
+                  if (tripStartDate && tripEndDate) {
+                    const [sy, sm, sd] = tripStartDate.split("-").map(Number);
+                    const [ey, em, ed] = tripEndDate.split("-").map(Number);
+                    let cursor = Date.UTC(sy, sm - 1, sd);
+                    const endMs = Date.UTC(ey, em - 1, ed);
+                    while (cursor <= endMs) {
+                      tripDaysList.push(new Date(cursor).toISOString().slice(0, 10));
+                      cursor += 86_400_000;
+                    }
+                  }
+                  console.log("[admin] trip days:", tripStartDate, "→", tripEndDate, "=", tripDaysList.length, "days", tripDaysList);
+
                   const rows: React.ReactNode[] = [];
-                  let lastDateKey = "";
-                  let dayNumber = 0;
 
-                  ordered.forEach((activity, idx) => {
-                    // ── Day header ──────────────────────────────────────────
-                    const dateKey = activity.startTime.toDate().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
-                    if (dateKey !== lastDateKey) {
-                      lastDateKey = dateKey;
-                      dayNumber += 1;
-                      const dateLabel = activity.startTime.toDate().toLocaleDateString("en-US", {
-                        weekday: "short", month: "short", day: "numeric",
-                        timeZone: "Europe/Madrid",
-                      });
-                      const captureDateKey = dateKey; // capture for closure
-                      rows.push(
-                        <div
-                          key={`day-${dateKey}`}
-                          data-day-header-key={captureDateKey}
-                          className="sticky z-10 flex items-center gap-3 -mx-5 px-5 bg-white"
-                          style={{ top: 64, paddingTop: 28, paddingBottom: 28, borderBottom: "1px solid rgba(180,100,90,0.10)" }}
-                        >
-                          <span className="font-bold text-[#D94040] uppercase tracking-widest whitespace-nowrap" style={{ fontSize: 18 }}>
-                            Day {dayNumber}
-                          </span>
-                          <span className="text-xs text-[#9A7A78]">{dateLabel}</span>
-                          <DayProgressBar dayKey={captureDateKey} />
-                          <button
-                            onClick={() => openAdd(captureDateKey)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-[6px] text-xs font-semibold text-white transition-colors shrink-0"
-                            style={{ background: "#D94040" }}
-                          >
-                            <span className="text-sm leading-none">+</span> Add
-                          </button>
-                        </div>
-                      );
-                    }
+                  tripDaysList.forEach((dayIso, dayIdx) => {
+                    const dayNumber = dayIdx + 1;
+                    const dayActivities = byDay.get(dayIso) ?? [];
 
-                    // ── Transfer card between consecutive activities ─────────
-                    const prev = idx > 0 ? ordered[idx - 1] : null;
-                    const transferKey = prev ? `${prev.id}->${activity.id}` : null;
-                    const transferInfo = transferKey ? transfers.get(transferKey) : null;
-                    if (prev?.category === "hotel" && activity.category !== "hotel" && activity.category !== "sleep_in_hotel") {
-                      console.log(`[render] hotel->act key=${transferKey} found=${!!transferInfo} transfers.size=${transfers.size}`);
-                    }
+                    // Date label — parse the ISO string as UTC so no browser-tz shift
+                    const [dy, dm, dd] = dayIso.split("-").map(Number);
+                    const dateLabel = new Date(Date.UTC(dy, dm - 1, dd)).toLocaleDateString("en-US", {
+                      weekday: "short", month: "short", day: "numeric", timeZone: "UTC",
+                    });
 
-                    // ── Out-of-order detection ───────────────────────────────
-                    // Red card if this activity starts before the one above it
-                    // in the current display order.
-                    const isOutOfOrder = !!prev &&
-                      activity.startTime.toMillis() < prev.startTime.toMillis();
-
-                    // Suppress transfer only when the CURRENT activity is the timeless hotel-morning
-                    // placeholder (it has no real time so a transfer "into" it makes no sense).
-                    // We DO show a transfer AFTER the hotel morning card — the guest needs to get
-                    // from the hotel to the next destination.
-                    const isTimeless = (a: Activity) => a.category === "hotel" && a.estimatedDuration === 0;
-                    const showTransfer = !!transferInfo && !isTimeless(activity);
-
-                    // For hotel morning cards, find the Sleep in Hotel activity on the prev day
-                    let prevSleepHotel: Activity | null = null;
-                    if (isHotelMorning(activity)) {
-                      const thisDayKey = toKey(activity);
-                      const [ty, tm, td] = thisDayKey.split("-").map(Number);
-                      const prevDayKey = new Date(Date.UTC(ty, tm - 1, td - 1)).toISOString().slice(0, 10);
-                      prevSleepHotel = ordered.find(
-                        (a) => toKey(a) === prevDayKey && a.category === "sleep_in_hotel",
-                      ) ?? null;
-                    }
-
-                    // Auto-derive linked accommodation from nights assignment
-                    // sleep_in_hotel → accommodation covering that night
-                    // hotel morning  → accommodation covering the PREVIOUS night
-                    let linkedAccommodation: Accommodation | null = null;
-                    if (activity.category === "sleep_in_hotel") {
-                      linkedAccommodation = accommodations.find(
-                        (a) => (a.nights ?? []).includes(dateKey)
-                      ) ?? null;
-                    } else if (isHotelMorning(activity)) {
-                      const [ty, tm, td] = dateKey.split("-").map(Number);
-                      const prevDayKey = new Date(Date.UTC(ty, tm - 1, td - 1)).toISOString().slice(0, 10);
-                      linkedAccommodation = accommodations.find(
-                        (a) => (a.nights ?? []).includes(prevDayKey)
-                      ) ?? null;
-                    }
-
-                    const startMins = adjMins(activity.startTime);
+                    // ── Day header ────────────────────────────────────────────
                     rows.push(
                       <div
-                        key={activity.id}
-                        className="flex flex-col gap-1.5"
-                        data-day-key={dateKey}
-                        data-start-mins={String(startMins)}
-                        data-activity-id={activity.id}
+                        key={`day-${dayIso}`}
+                        data-day-header-key={dayIso}
+                        className="sticky z-10 flex items-center gap-3 -mx-5 px-5 bg-white"
+                        style={{ top: 64, paddingTop: 28, paddingBottom: 28, borderBottom: "1px solid rgba(180,100,90,0.10)" }}
                       >
-                        {showTransfer && (
-                          <TransferCard info={transferInfo!} onModeChange={handleModeChange} />
-                        )}
-                        <SortableActivityRow
-                          activity={activity}
-                          tripId={tripId}
-                          isOutOfOrder={isOutOfOrder}
-                          prevSleepHotel={prevSleepHotel}
-                          accommodations={accommodations}
-                          linkedAccommodation={linkedAccommodation}
-                          onEdit={() => openEdit(activity)}
-                          onDelete={() => handleDeleteActivity(activity.id)}
-                        />
+                        <span className="font-bold text-[#D94040] uppercase tracking-widest whitespace-nowrap" style={{ fontSize: 18 }}>
+                          Day {dayNumber}
+                        </span>
+                        <span className="text-xs text-[#9A7A78]">{dateLabel}</span>
+                        <DayProgressBar dayKey={dayIso} />
+                        <button
+                          onClick={() => openAdd(dayIso)}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-[6px] text-xs font-semibold text-white transition-colors shrink-0"
+                          style={{ background: "#D94040" }}
+                        >
+                          <span className="text-sm leading-none">+</span> Add
+                        </button>
                       </div>
                     );
+
+                    // ── Empty day placeholder ─────────────────────────────────
+                    if (dayActivities.length === 0) {
+                      rows.push(
+                        <button
+                          key={`empty-${dayIso}`}
+                          onClick={() => openAdd(dayIso)}
+                          className="w-full flex items-center justify-center gap-2 py-5 my-2 rounded-[10px] text-sm transition-colors"
+                          style={{
+                            border: "1.5px dashed rgba(180,100,90,0.25)",
+                            color: "#9A7A78",
+                          }}
+                          onMouseEnter={(e) => {
+                            (e.currentTarget as HTMLButtonElement).style.borderColor = "#D94040";
+                            (e.currentTarget as HTMLButtonElement).style.color = "#D94040";
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(180,100,90,0.25)";
+                            (e.currentTarget as HTMLButtonElement).style.color = "#9A7A78";
+                          }}
+                        >
+                          <span className="text-base leading-none">+</span>
+                          Add first activity for Day {dayNumber}
+                        </button>
+                      );
+                      return; // skip activity rendering for this day
+                    }
+
+                    // ── Activities for this day ───────────────────────────────
+                    dayActivities.forEach((activity) => {
+                      const idx = orderedIdxMap.get(activity.id)!;
+                      const prev = idx > 0 ? ordered[idx - 1] : null;
+                      const dateKey = toKey(activity);
+                      const transferKey = prev ? `${prev.id}->${activity.id}` : null;
+                      const transferInfo = transferKey ? transfers.get(transferKey) : null;
+                      if (prev?.category === "hotel" && activity.category !== "hotel" && activity.category !== "sleep_in_hotel") {
+                        console.log(`[render] hotel->act key=${transferKey} found=${!!transferInfo} transfers.size=${transfers.size}`);
+                      }
+
+                      const isOutOfOrder = !!prev && activity.startTime.toMillis() < prev.startTime.toMillis();
+                      const isTimeless = (a: Activity) => a.category === "hotel" && a.estimatedDuration === 0;
+                      const showTransfer = !!transferInfo && !isTimeless(activity);
+
+                      let prevSleepHotel: Activity | null = null;
+                      if (isHotelMorning(activity)) {
+                        const [ty, tm, td] = dateKey.split("-").map(Number);
+                        const prevDayKey = new Date(Date.UTC(ty, tm - 1, td - 1)).toISOString().slice(0, 10);
+                        prevSleepHotel = ordered.find(
+                          (a) => toKey(a) === prevDayKey && a.category === "sleep_in_hotel",
+                        ) ?? null;
+                      }
+
+                      let linkedAccommodation: Accommodation | null = null;
+                      if (activity.category === "sleep_in_hotel") {
+                        linkedAccommodation = accommodations.find(
+                          (a) => (a.nights ?? []).includes(dateKey)
+                        ) ?? null;
+                      } else if (isHotelMorning(activity)) {
+                        const [ty, tm, td] = dateKey.split("-").map(Number);
+                        const prevDayKey = new Date(Date.UTC(ty, tm - 1, td - 1)).toISOString().slice(0, 10);
+                        linkedAccommodation = accommodations.find(
+                          (a) => (a.nights ?? []).includes(prevDayKey)
+                        ) ?? null;
+                      }
+
+                      const startMins = adjMins(activity.startTime);
+                      rows.push(
+                        <div
+                          key={activity.id}
+                          className="flex flex-col gap-1.5"
+                          data-day-key={dateKey}
+                          data-start-mins={String(startMins)}
+                          data-activity-id={activity.id}
+                        >
+                          {showTransfer && (
+                            <TransferCard info={transferInfo!} onModeChange={handleModeChange} />
+                          )}
+                          <SortableActivityRow
+                            activity={activity}
+                            tripId={tripId}
+                            isOutOfOrder={isOutOfOrder}
+                            prevSleepHotel={prevSleepHotel}
+                            accommodations={accommodations}
+                            linkedAccommodation={linkedAccommodation}
+                            onEdit={() => openEdit(activity)}
+                            onDelete={() => handleDeleteActivity(activity.id)}
+                          />
+                        </div>
+                      );
+                    });
                   });
 
                   return rows;
@@ -2334,7 +2359,7 @@ export default function AdminTripPage() {
                 })() : null}
               </DragOverlay>
             </DndContext>
-          ) : null}
+          )}
         </section>
 
         {/* ── Notifications ── */}

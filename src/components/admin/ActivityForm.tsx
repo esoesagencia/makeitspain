@@ -624,18 +624,20 @@ export function ActivityForm({
               <ATextarea rows={2} placeholder="Only visible to admin…" value={form.coordinatorNote} onChange={(e) => set("coordinatorNote", e.target.value)} />
             </AField>
 
-            {error && <p className="text-xs text-[#E74C3C]">{error}</p>}
           </div>
         </form>
 
         {/* Footer */}
-        <div className="flex gap-3 px-6 pb-5 pt-4 shrink-0" style={{ borderTop: "1px solid rgba(180,100,90,0.1)" }}>
-          <Button type="button" variant="ghost" size="md" className="flex-1" onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="gold" size="md" className="flex-1" loading={saving} onClick={handleSubmit}>
-            {isEdit ? "Save Changes" : "Add Activity"}
-          </Button>
+        <div className="flex flex-col gap-2 px-6 pb-5 pt-4 shrink-0" style={{ borderTop: "1px solid rgba(180,100,90,0.1)" }}>
+          {error && <p className="text-xs text-[#E74C3C] text-center">{error}</p>}
+          <div className="flex gap-3">
+            <Button type="button" variant="ghost" size="md" className="flex-1" onClick={onClose} disabled={saving}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="gold" size="md" className="flex-1" loading={saving} onClick={handleSubmit}>
+              {isEdit ? "Save Changes" : "Add Activity"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
