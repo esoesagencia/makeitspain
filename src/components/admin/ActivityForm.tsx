@@ -204,12 +204,15 @@ export function ActivityForm({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    console.log("[ActivityForm] handleSubmit called, form:", { title: form.title, date: form.date, address: form.address, tripStartDate, tripEndDate });
     setError("");
-    if (!form.title.trim())   return setError("Activity name is required.");
-    if (!form.date)           return setError("Please select a date.");
-    if (form.date < tripStartDate || form.date > tripEndDate)
+    if (!form.title.trim())   { console.warn("[ActivityForm] BLOCKED: no title"); return setError("Activity name is required."); }
+    if (!form.date)           { console.warn("[ActivityForm] BLOCKED: no date");  return setError("Please select a date."); }
+    if (form.date < tripStartDate || form.date > tripEndDate) {
+      console.warn("[ActivityForm] BLOCKED: date out of range", form.date, tripStartDate, tripEndDate);
       return setError(`Date must be within the trip dates (${tripStartDate} – ${tripEndDate}).`);
-    if (!form.address.trim()) return setError("Address is required.");
+    }
+    if (!form.address.trim()) { console.warn("[ActivityForm] BLOCKED: no address"); return setError("Address is required."); }
 
     setSaving(true);
     try {
