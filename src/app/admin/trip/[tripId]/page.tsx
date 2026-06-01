@@ -1209,6 +1209,8 @@ export default function AdminTripPage() {
   // Sync sleep_in_hotel + hotel morning cards whenever accommodation nights change.
   // Tracks a hash of sorted nights per accommodation so it re-runs on any night edit.
   const hotelCardsProcessedRef = useRef<Map<string, string>>(new Map());
+  // Tracks in-flight syncs to prevent duplicate calls for the same (id, nightsKey).
+  const hotelCardsPendingRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!trip || !tripId) return;
     const startStr = tsToDateInput(trip.startDate);
@@ -1217,10 +1219,20 @@ export default function AdminTripPage() {
     accommodations.forEach((accom) => {
       const nightsKey = [...(accom.nights ?? [])].sort().join(",");
       if (hotelCardsProcessedRef.current.get(accom.id) === nightsKey) return;
-      hotelCardsProcessedRef.current.set(accom.id, nightsKey);
+      const pendingKey = `${accom.id}__${nightsKey}`;
+      if (hotelCardsPendingRef.current.has(pendingKey)) return; // already in flight
+      hotelCardsPendingRef.current.add(pendingKey);
 
       import("@/lib/utils/hotelCards").then(({ syncHotelCardsForAccommodation }) => {
-        syncHotelCardsForAccommodation(tripId, accom, startStr, endStr).catch(console.error);
+        syncHotelCardsForAccommodation(tripId, accom, startStr, endStr)
+          .then(() => {
+            // Only mark as done after a successful sync so failures are retried
+            hotelCardsProcessedRef.current.set(accom.id, nightsKey);
+          })
+          .catch(console.error)
+          .finally(() => {
+            hotelCardsPendingRef.current.delete(pendingKey);
+          });
       });
     });
   }, [accommodations, trip, tripId]);
