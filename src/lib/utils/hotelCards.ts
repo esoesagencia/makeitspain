@@ -103,18 +103,44 @@ export async function syncHotelCardsForAccommodation(
   const missing = [...expected].filter((k) => !existingKeys.has(k));
   if (missing.length === 0) return;
 
-  // Append new cards after whatever is already in the collection
+  // Build a per-date sortOrder map so we can pin morning cards first and night
+  // cards last within each day, even when only one of the pair is being created.
   const allSnap = await getDocs(actColl);
   const maxSort = allSnap.docs.length > 0
     ? Math.max(...allSnap.docs.map((d) => (d.data().sortOrder as number) ?? 0))
     : 0;
-  let sortOrder = maxSort;
+
+  // Group existing sortOrders by Madrid date key
+  const sortsByDate = new Map<string, number[]>();
+  allSnap.docs.forEach((docSnap) => {
+    const data = docSnap.data();
+    const dateKey = (data.startTime as { toDate(): Date }).toDate()
+      .toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+    const so = (data.sortOrder as number) ?? 0;
+    if (!sortsByDate.has(dateKey)) sortsByDate.set(dateKey, []);
+    sortsByDate.get(dateKey)!.push(so);
+  });
+
+  // Helper: sortOrder that goes before all existing activities on a given day
+  const firstOnDay = (dateKey: string) => {
+    const orders = sortsByDate.get(dateKey);
+    return orders && orders.length > 0 ? Math.min(...orders) - 1 : maxSort + 10;
+  };
+  // Helper: sortOrder that goes after all existing activities on a given day
+  const lastOnDay = (dateKey: string) => {
+    const orders = sortsByDate.get(dateKey);
+    return orders && orders.length > 0 ? Math.max(...orders) + 1 : maxSort + 10;
+  };
 
   const sortedNights = [...(accom.nights ?? [])].sort();
   for (const night of sortedNights) {
     const nightKey = `sleep_in_hotel__${night}`;
     if (missing.includes(nightKey)) {
-      sortOrder += 10;
+      // Night card always goes last on its day
+      const sortOrder = lastOnDay(night);
+      // Register this new card so morning card computation sees it
+      if (!sortsByDate.has(night)) sortsByDate.set(night, []);
+      sortsByDate.get(night)!.push(sortOrder);
       const nightTs = parseMadridDateTime(night, "23:00");
       await addDoc(actColl, {
         title:                 accom.name || "Hotel Night",
@@ -157,7 +183,11 @@ export async function syncHotelCardsForAccommodation(
 
     const morningKey = `hotel__${nextDay}`;
     if (missing.includes(morningKey)) {
-      sortOrder += 10;
+      // Morning card always goes first on its day
+      const sortOrder = firstOnDay(nextDay);
+      // Register this new card so subsequent iterations see it
+      if (!sortsByDate.has(nextDay)) sortsByDate.set(nextDay, []);
+      sortsByDate.get(nextDay)!.push(sortOrder);
       const midnightTs = parseMadridDateTime(nextDay, "00:00");
       await addDoc(actColl, {
         title:                 accom.name ? `${accom.name} – Morning` : "Hotel Morning",
